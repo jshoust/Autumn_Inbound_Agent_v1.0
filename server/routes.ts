@@ -227,6 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // User management routes
   app.get('/api/users', async (req, res) => {
     try {

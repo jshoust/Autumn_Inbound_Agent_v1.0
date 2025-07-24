@@ -181,48 +181,48 @@ export default function Agents() {
                   <div>
                     <h4 className="font-semibold mb-2">Candidate Information</h4>
                     <div className="space-y-2 text-sm">
-                      {conversationDetails.analysis ? (
+                      {conversationDetails.data_collection ? (
                         <div className="grid grid-cols-1 gap-3">
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">First Name:</span>
-                            <span>{conversationDetails.analysis.First_Name || 'Not provided'}</span>
+                            <span>{conversationDetails.data_collection.First_Name?.value || 'Not provided'}</span>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">Last Name:</span>
-                            <span>{conversationDetails.analysis.Last_Name || 'Not provided'}</span>
+                            <span>{conversationDetails.data_collection.Last_Name?.value || 'Not provided'}</span>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">Phone Number:</span>
-                            <span>{conversationDetails.analysis.Phone_number || 'Not provided'}</span>
+                            <span>{conversationDetails.data_collection.Phone_number?.value || 'Not provided'}</span>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">Valid CDL Class A:</span>
-                            <Badge variant={conversationDetails.analysis.question_one ? 'default' : 'destructive'}>
-                              {conversationDetails.analysis.question_one ? 'Yes' : 'No'}
+                            <Badge variant={conversationDetails.data_collection.question_one?.value ? 'default' : 'destructive'}>
+                              {conversationDetails.data_collection.question_one?.value ? 'Yes' : 'No'}
                             </Badge>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">18+ Months Experience:</span>
-                            <Badge variant={conversationDetails.analysis.Question_two ? 'default' : 'destructive'}>
-                              {conversationDetails.analysis.Question_two ? 'Yes' : 'No'}
+                            <Badge variant={conversationDetails.data_collection.Question_two?.value ? 'default' : 'destructive'}>
+                              {conversationDetails.data_collection.Question_two?.value ? 'Yes' : 'No'}
                             </Badge>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">Clean Record (No Violations):</span>
-                            <Badge variant={conversationDetails.analysis.Question_three === false ? 'default' : 'destructive'}>
-                              {conversationDetails.analysis.Question_three === false ? 'Clean' : 'Has Violations'}
+                            <Badge variant={conversationDetails.data_collection.Question_three?.value === false ? 'default' : 'destructive'}>
+                              {conversationDetails.data_collection.Question_three?.value === false ? 'Clean' : 'Has Violations'}
                             </Badge>
                           </div>
                           <div className="flex justify-between items-center p-2 bg-background rounded border">
                             <span className="font-medium">Work Authorization:</span>
-                            <Badge variant={conversationDetails.analysis.question_four ? 'default' : 'destructive'}>
-                              {conversationDetails.analysis.question_four ? 'Authorized' : 'Not Authorized'}
+                            <Badge variant={conversationDetails.data_collection.question_four?.value ? 'default' : 'destructive'}>
+                              {conversationDetails.data_collection.question_four?.value ? 'Authorized' : 'Not Authorized'}
                             </Badge>
                           </div>
-                          {conversationDetails.analysis.schedule && (
+                          {conversationDetails.data_collection.schedule?.value && (
                             <div className="flex justify-between items-start p-2 bg-background rounded border">
-                              <span className="font-medium">Schedule:</span>
-                              <span className="text-right">{conversationDetails.analysis.schedule}</span>
+                              <span className="font-medium">Interview Schedule:</span>
+                              <span className="text-right">{conversationDetails.data_collection.schedule.value}</span>
                             </div>
                           )}
                         </div>
