@@ -234,43 +234,24 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                {/* Desktop table layout */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[200px]">Conversation ID</TableHead>
-                        <TableHead className="min-w-[120px]">Agent</TableHead>
-                        <TableHead className="min-w-[80px]">Messages</TableHead>
-                        <TableHead className="min-w-[80px]">Result</TableHead>
-                        <TableHead className="min-w-[80px]">Duration</TableHead>
-                        <TableHead className="min-w-[150px]">Started</TableHead>
-                        <TableHead className="min-w-[120px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {conversations.slice(0, 5).map((conversation) => (
-                        <TableRow key={conversation.conversation_id}>
-                          <TableCell className="font-mono text-sm">
-                            <div className="max-w-[200px] truncate">
-                              {conversation.conversation_id}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 max-w-[120px]">
-                              <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="truncate text-sm">
+                {/* Desktop responsive card layout */}
+                <div className="hidden sm:block">
+                  <div className="space-y-3 p-4">
+                    {conversations.slice(0, 5).map((conversation) => (
+                      <div key={conversation.conversation_id} className="border rounded-lg p-4 bg-white hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Bot className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-sm mb-1">
                                 {conversation.agent_name || 'Autumn Agent'}
-                              </span>
+                              </div>
+                              <div className="font-mono text-xs text-muted-foreground truncate">
+                                {conversation.conversation_id}
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                              <span>{conversation.message_count}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
+                          </div>
+                          <div className="flex items-center gap-3">
                             <Badge 
                               variant={
                                 conversation.call_successful === 'success' 
@@ -283,24 +264,6 @@ export default function Dashboard() {
                             >
                               {conversation.call_successful}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>
-                                {conversation.call_duration_secs
-                                  ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
-                                  : 'N/A'
-                                }
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <div className="max-w-[150px]">
-                              {new Date(conversation.start_time_unix_secs * 1000).toLocaleString()}
-                            </div>
-                          </TableCell>
-                          <TableCell>
                             <Button
                               variant="outline"
                               size="sm"
@@ -308,13 +271,33 @@ export default function Dashboard() {
                               className="flex items-center gap-2"
                             >
                               <Eye className="h-4 w-4" />
-                              <span className="hidden lg:inline">View Details</span>
+                              View
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-6 text-sm">
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{conversation.message_count}</span>
+                            <span className="text-muted-foreground">messages</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {conversation.call_duration_secs
+                                ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
+                                : 'N/A'
+                              }
+                            </span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            {new Date(conversation.start_time_unix_secs * 1000).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
