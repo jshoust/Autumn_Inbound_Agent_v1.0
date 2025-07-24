@@ -15,6 +15,8 @@ export interface IStorage {
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
   getCandidates(search?: string, status?: string): Promise<Candidate[]>;
   updateCandidateQualification(id: number, qualified: boolean): Promise<Candidate | undefined>;
+  getCandidateByConversationId(conversationId: string): Promise<Candidate | undefined>;
+  storeConversationData(conversationData: any): Promise<Candidate>;
   getCandidateStats(): Promise<{
     todayCalls: number;
     qualified: number;
@@ -91,7 +93,7 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(candidates);
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions) as any);
     }
     
     return await query.orderBy(desc(candidates.createdAt)).limit(100);
@@ -104,6 +106,91 @@ export class DatabaseStorage implements IStorage {
       .where(eq(candidates.id, id))
       .returning();
     return candidate || undefined;
+  }
+
+  async getCandidateByConversationId(conversationId: string): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidates).where(eq(candidates.conversationId, conversationId));
+    return candidate || undefined;
+  }
+
+  async storeConversationData(conversationData: any): Promise<Candidate> {
+    const dataCollection = conversationData.data_collection || {};
+    const dynamicVars = conversationData.conversation_initiation_client_data?.dynamic_variables || {};
+    
+    // Extract structured data from ElevenLabs format
+    const candidateData: InsertCandidate = {
+      conversationId: conversationData.conversation_id,
+      callId: dynamicVars.system__call_sid,
+      
+      // Candidate Information
+      firstName: dataCollection.First_Name?.value,
+      lastName: dataCollection.Last_Name?.value,
+      phone: dataCollection.Phone_number?.value,
+      
+      // Qualification Questions
+      hasCdlA: dataCollection.question_one?.value || false,
+      hasExperience: dataCollection.Question_two?.value || false,
+      hasViolations: dataCollection.Question_three?.value || false,
+      hasWorkAuth: dataCollection.question_four?.value || false,
+      
+      // Interview Scheduling
+      interviewSchedule: dataCollection.schedule?.value,
+      
+      // Call Details
+      agentId: dynamicVars.system__agent_id,
+      callDuration: dynamicVars.system__call_duration_secs,
+      callStatus: conversationData.call_successful,
+      messageCount: conversationData.transcript?.length || 0,
+      
+      // Raw Data Storage
+      transcript: conversationData.transcript,
+      dataCollection: dataCollection,
+      rawConversationData: conversationData,
+      
+      // Auto-qualify based on basic criteria
+      qualified: this.autoQualifyCandidate(dataCollection),
+      notificationSent: false,
+    };
+    
+    // Check if candidate already exists
+    const existing = await this.getCandidateByConversationId(conversationData.conversation_id);
+    if (existing) {
+      // Update existing record
+      const [updated] = await db
+        .update(candidates)
+        .set({
+          ...candidateData,
+          updatedAt: new Date(),
+        })
+        .where(eq(candidates.conversationId, conversationData.conversation_id))
+        .returning();
+      return updated;
+    } else {
+      // Create new record
+      const [candidate] = await db
+        .insert(candidates)
+        .values(candidateData)
+        .returning();
+      return candidate;
+    }
+  }
+
+  private autoQualifyCandidate(dataCollection: any): boolean | null {
+    // Auto-qualify if they have CDL-A, experience, no violations, and work authorization
+    const hasCdl = dataCollection.question_one?.value === true;
+    const hasExp = dataCollection.Question_two?.value === true;
+    const noViolations = dataCollection.Question_three?.value === false;
+    const hasAuth = dataCollection.question_four?.value === true;
+    
+    if (hasCdl && hasExp && noViolations && hasAuth) {
+      return true;
+    } else if (dataCollection.question_one?.value === false) {
+      // Definitely not qualified without CDL
+      return false;
+    }
+    
+    // Leave as pending for manual review
+    return null;
   }
 
   async getCandidateStats(): Promise<{

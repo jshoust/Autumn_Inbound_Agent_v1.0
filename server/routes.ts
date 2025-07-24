@@ -227,6 +227,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Store conversation data endpoint (using current schema)
+  app.post('/api/elevenlabs/conversations/:id/store', async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const conversation = await elevenLabsService.getConversationDetails(conversationId);
+      
+      console.log(`Storing conversation data for ${conversationId}...`);
+      
+      // Extract data from ElevenLabs format
+      const dataCollection = conversation.data_collection || {};
+      const dynamicVars = conversation.conversation_initiation_client_data?.dynamic_variables || {};
+      
+      // Store using current candidate schema
+      const candidateData = {
+        conversationId: conversationId,
+        callId: dynamicVars.system__call_sid || conversationId,
+        phone: dataCollection.Phone_number?.value || 'Unknown',
+        transcript: JSON.stringify(conversation.transcript || []),
+        answers: dataCollection,
+        qualified: null,
+        experience: dataCollection.Question_two?.value ? 'Yes - 18+ months' : 'Unknown',
+        cdlType: dataCollection.question_one?.value ? 'CDL-A' : 'None',
+      };
+      
+      console.log('Extracted candidate data:', {
+        name: `${dataCollection.First_Name?.value} ${dataCollection.Last_Name?.value}`,
+        phone: dataCollection.Phone_number?.value,
+        cdl: dataCollection.question_one?.value,
+        experience: dataCollection.Question_two?.value,
+        violations: dataCollection.Question_three?.value,
+        workAuth: dataCollection.question_four?.value,
+        schedule: dataCollection.schedule?.value
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Data extracted successfully (database schema update needed for full storage)',
+        extractedData: candidateData 
+      });
+    } catch (error) {
+      console.error('Error processing conversation data:', error);
+      res.status(500).json({ error: 'Failed to process conversation data' });
+    }
+  });
+
 
 
   // User management routes

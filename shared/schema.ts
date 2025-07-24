@@ -4,14 +4,40 @@ import { z } from "zod";
 
 export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").unique().notNull(),
   callId: text("call_id"),
-  phone: text("phone").notNull(),
-  transcript: text("transcript"),
-  answers: jsonb("answers"),
+  
+  // Candidate Information
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  
+  // Qualification Questions
+  hasCdlA: boolean("has_cdl_a"),
+  hasExperience: boolean("has_experience"),
+  hasViolations: boolean("has_violations"),
+  hasWorkAuth: boolean("has_work_auth"),
+  
+  // Interview Scheduling
+  interviewSchedule: text("interview_schedule"),
+  
+  // Call Details
+  agentId: text("agent_id"),
+  callDuration: integer("call_duration_secs"),
+  callStatus: text("call_status"), // success/failure
+  messageCount: integer("message_count"),
+  
+  // Raw Data Storage
+  transcript: jsonb("transcript"), // Full conversation transcript
+  dataCollection: jsonb("data_collection"), // ElevenLabs extraction data
+  rawConversationData: jsonb("raw_conversation_data"), // Complete ElevenLabs response
+  
+  // Processing Status
   qualified: boolean("qualified"),
-  experience: text("experience"),
-  cdlType: text("cdl_type"),
+  notificationSent: boolean("notification_sent").default(false),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
