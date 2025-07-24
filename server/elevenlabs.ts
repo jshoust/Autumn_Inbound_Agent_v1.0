@@ -41,6 +41,18 @@ export class ElevenLabsService {
     }
   }
 
+  async getRecentConversations(limit: number = 10): Promise<any[]> {
+    try {
+      console.log(`Fetching recent ${limit} conversations from ElevenLabs...`);
+      const data = await this.makeRequest(`/convai/conversations?limit=${limit}`);
+      console.log(`Found ${data.conversations?.length || 0} recent conversations`);
+      return data.conversations || [];
+    } catch (error) {
+      console.error('Failed to fetch recent conversations:', error);
+      throw error;
+    }
+  }
+
   async getConversation(conversationId: string): Promise<ConversationData | null> {
     try {
       console.log(`Fetching conversation ${conversationId} from ElevenLabs...`);
