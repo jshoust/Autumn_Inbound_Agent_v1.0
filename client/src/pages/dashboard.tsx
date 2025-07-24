@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Truck, Bell, Bot, MessageCircle, Clock, Eye } from "lucide-react";
+import { Truck, Bell, Bot, MessageCircle, Clock, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [expandedCalls, setExpandedCalls] = useState<Set<string>>(new Set());
 
   const { data: candidates = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/candidates', searchTerm, statusFilter],
@@ -59,6 +60,16 @@ export default function Dashboard() {
 
   const handleCloseModal = () => {
     setSelectedCandidate(null);
+  };
+
+  const toggleCallExpansion = (conversationId: string) => {
+    const newExpanded = new Set(expandedCalls);
+    if (newExpanded.has(conversationId)) {
+      newExpanded.delete(conversationId);
+    } else {
+      newExpanded.add(conversationId);
+    }
+    setExpandedCalls(newExpanded);
   };
 
   return (
@@ -117,66 +128,109 @@ export default function Dashboard() {
               <>
                 {/* Mobile card layout */}
                 <div className="block sm:hidden">
-                  <div className="space-y-3 p-4">
-                    {conversations.slice(0, 5).map((conversation) => (
-                      <div key={conversation.conversation_id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1 flex-1 min-w-0">
-                            <div className="font-mono text-xs text-muted-foreground truncate">
-                              {conversation.conversation_id}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="truncate">
-                                {conversation.agent_name || 'Autumn Agent'}
-                              </span>
-                            </div>
-                          </div>
-                          <Badge 
-                            variant={
-                              conversation.call_successful === 'success' 
-                                ? 'default' 
-                                : conversation.call_successful === 'failure' 
-                                  ? 'destructive' 
-                                  : 'secondary'
-                            }
-                            className="capitalize text-xs"
+                  <div className="space-y-2 p-3">
+                    {conversations.slice(0, 5).map((conversation) => {
+                      const isExpanded = expandedCalls.has(conversation.conversation_id);
+                      return (
+                        <div key={conversation.conversation_id} className="border rounded-lg bg-white">
+                          {/* Compact header - always visible */}
+                          <div 
+                            className="p-3 cursor-pointer"
+                            onClick={() => toggleCallExpansion(conversation.conversation_id)}
                           >
-                            {conversation.call_successful}
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                            <span>{conversation.message_count} messages</span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium truncate">
+                                    {conversation.agent_name || 'Autumn Agent'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(conversation.start_time_unix_secs * 1000).toLocaleTimeString([], { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={
+                                    conversation.call_successful === 'success' 
+                                      ? 'default' 
+                                      : conversation.call_successful === 'failure' 
+                                        ? 'destructive' 
+                                        : 'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {conversation.call_successful}
+                                </Badge>
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span>
-                              {conversation.call_duration_secs
-                                ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
+                          
+                          {/* Expanded details */}
+                          {isExpanded && (
+                            <div className="px-3 pb-3 space-y-3 border-t bg-slate-50">
+                              <div className="pt-3">
+                                <div className="text-xs text-muted-foreground mb-2">Conversation ID</div>
+                                <div className="font-mono text-xs bg-white px-2 py-1 rounded border break-all">
+                                  {conversation.conversation_id}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">Messages</div>
+                                  <div className="flex items-center gap-1">
+                                    <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                                    <span>{conversation.message_count}</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">Duration</div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                    <span>
+                                      {conversation.call_duration_secs
+                                        ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
+                                        : 'N/A'
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Full Date</div>
+                                <div className="text-sm">
+                                  {new Date(conversation.start_time_unix_secs * 1000).toLocaleDateString()} {new Date(conversation.start_time_unix_secs * 1000).toLocaleTimeString()}
+                                </div>
+                              </div>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedConversation(conversation.conversation_id);
+                                }}
+                                className="w-full flex items-center justify-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                View Full Transcript
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(conversation.start_time_unix_secs * 1000).toLocaleDateString()} {new Date(conversation.start_time_unix_secs * 1000).toLocaleTimeString()}
-                        </div>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedConversation(conversation.conversation_id)}
-                          className="w-full flex items-center justify-center gap-2"
-                        >
-                          <Eye className="h-4 w-4" />
-                          View Details
-                        </Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
                 
