@@ -36,24 +36,24 @@ export default function Agents() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Recent Calls</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Recent Calls</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Latest calls processed by your ElevenLabs agents
         </p>
       </div>
 
       <Card>
-            <CardHeader>
-              <CardTitle>Recent Conversations</CardTitle>
-              <CardDescription>
-                Latest calls processed by your ElevenLabs agents
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <CardHeader>
+          <CardTitle className="text-lg sm:text-xl">Recent Conversations</CardTitle>
+          <CardDescription className="text-sm">
+            Latest calls processed by your ElevenLabs agents
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0 sm:p-6">
               {conversationsLoading ? (
-                <div className="space-y-4">
+                <div className="space-y-4 p-4">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="animate-pulse">
                       <div className="h-12 bg-gray-200 rounded"></div>
@@ -61,95 +61,169 @@ export default function Agents() {
                   ))}
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground px-4">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2" />
                   <p>No recent conversations found</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Conversation ID</TableHead>
-                      <TableHead>Agent</TableHead>
-                      <TableHead>Messages</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Started</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {conversations.map((conversation) => (
-                      <TableRow key={conversation.conversation_id}>
-                        <TableCell className="font-mono text-sm">
-                          {conversation.conversation_id.slice(0, 20)}...
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Bot className="h-4 w-4 text-muted-foreground" />
-                            <span className="max-w-32 truncate">
-                              {conversation.agent_name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span>{conversation.message_count}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              conversation.call_successful === 'success' 
-                                ? 'default' 
-                                : conversation.call_successful === 'failure' 
-                                  ? 'destructive' 
-                                  : 'secondary'
-                            }
-                            className="capitalize"
-                          >
-                            {conversation.call_successful}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {conversation.call_duration_secs
-                                ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
-                                : 'N/A'
+                <>
+                  {/* Mobile card layout */}
+                  <div className="block sm:hidden">
+                    <div className="space-y-3 p-4">
+                      {conversations.map((conversation) => (
+                        <div key={conversation.conversation_id} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="font-mono text-xs text-muted-foreground truncate">
+                                {conversation.conversation_id}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate">
+                                  {conversation.agent_name || 'Autumn Agent'}
+                                </span>
+                              </div>
+                            </div>
+                            <Badge 
+                              variant={
+                                conversation.call_successful === 'success' 
+                                  ? 'default' 
+                                  : conversation.call_successful === 'failure' 
+                                    ? 'destructive' 
+                                    : 'secondary'
                               }
-                            </span>
+                              className="capitalize text-xs"
+                            >
+                              {conversation.call_successful}
+                            </Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(conversation.start_time_unix_secs * 1000).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                              <span>{conversation.message_count} messages</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              <span>
+                                {conversation.call_duration_secs
+                                  ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
+                                  : 'N/A'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(conversation.start_time_unix_secs * 1000).toLocaleDateString()} {new Date(conversation.start_time_unix_secs * 1000).toLocaleTimeString()}
+                          </div>
+                          
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedConversation(conversation.conversation_id)}
-                            className="flex items-center gap-2"
+                            className="w-full flex items-center justify-center gap-2"
                           >
                             <Eye className="h-4 w-4" />
                             View Details
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Desktop table layout */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Conversation ID</TableHead>
+                          <TableHead className="min-w-[120px]">Agent</TableHead>
+                          <TableHead className="min-w-[80px]">Messages</TableHead>
+                          <TableHead className="min-w-[80px]">Result</TableHead>
+                          <TableHead className="min-w-[80px]">Duration</TableHead>
+                          <TableHead className="min-w-[150px]">Started</TableHead>
+                          <TableHead className="min-w-[120px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {conversations.map((conversation) => (
+                          <TableRow key={conversation.conversation_id}>
+                            <TableCell className="font-mono text-sm">
+                              <div className="max-w-[200px] truncate">
+                                {conversation.conversation_id}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 max-w-[120px]">
+                                <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate text-sm">
+                                  {conversation.agent_name || 'Autumn Agent'}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                                <span>{conversation.message_count}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  conversation.call_successful === 'success' 
+                                    ? 'default' 
+                                    : conversation.call_successful === 'failure' 
+                                      ? 'destructive' 
+                                      : 'secondary'
+                                }
+                                className="capitalize"
+                              >
+                                {conversation.call_successful}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  {conversation.call_duration_secs
+                                    ? `${Math.floor(conversation.call_duration_secs / 60)}:${String(conversation.call_duration_secs % 60).padStart(2, '0')}`
+                                    : 'N/A'
+                                  }
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <div className="max-w-[150px]">
+                                {new Date(conversation.start_time_unix_secs * 1000).toLocaleString()}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedConversation(conversation.conversation_id)}
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                <span className="hidden lg:inline">View Details</span>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
 
       <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] sm:max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Call Details</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Call Details</DialogTitle>
+            <DialogDescription className="text-sm">
               Conversation transcript and extraction data
             </DialogDescription>
           </DialogHeader>
@@ -162,29 +236,31 @@ export default function Agents() {
               </div>
             </div>
           ) : conversationDetails ? (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-6">
+            <ScrollArea className="max-h-[70vh] sm:max-h-[60vh]">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Call Summary */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                   <div>
-                    <h4 className="font-semibold mb-2">Call Information</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><strong>Agent:</strong> Autumn Transport Inbound Recruiting Agent</p>
+                    <h4 className="font-semibold mb-2 text-sm sm:text-base">Call Information</h4>
+                    <div className="space-y-1 text-xs sm:text-sm">
+                      <p><strong>Agent:</strong> <span className="break-words">Autumn Transport Inbound Recruiting Agent</span></p>
                       <p><strong>Duration:</strong> {
                         conversationDetails.conversation_initiation_client_data?.dynamic_variables?.system__call_duration_secs 
                           ? `${Math.floor(conversationDetails.conversation_initiation_client_data.dynamic_variables.system__call_duration_secs / 60)}:${String(conversationDetails.conversation_initiation_client_data.dynamic_variables.system__call_duration_secs % 60).padStart(2, '0')}`
                           : 'N/A'
                       }</p>
                       <p><strong>Messages:</strong> {conversationDetails.transcript?.length || 0}</p>
-                      <p><strong>Status:</strong></p>
-                      <Badge className="mt-1" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
-                        {conversationDetails.call_successful || 'unknown'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <strong>Status:</strong>
+                        <Badge className="text-xs" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
+                          {conversationDetails.call_successful || 'unknown'}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Candidate Information</h4>
-                    <div className="space-y-2 text-sm">
+                    <h4 className="font-semibold mb-2 text-sm sm:text-base">Candidate Information</h4>
+                    <div className="space-y-2 text-xs sm:text-sm">
                       {conversationDetails.data_collection ? (
                         <div className="grid grid-cols-1 gap-3">
                           <div className="flex justify-between items-center p-2 bg-background rounded border">

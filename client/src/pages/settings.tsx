@@ -154,24 +154,24 @@ export default function Settings() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage users and notification preferences</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage users and notification preferences</p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <UserPlus className="h-4 w-4 mr-2" />
               Add User
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl">Create New User</DialogTitle>
+              <DialogDescription className="text-sm">
                 Add a new user to receive recruitment notifications
               </DialogDescription>
             </DialogHeader>
@@ -286,78 +286,144 @@ export default function Settings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg sm:text-xl">User Management</CardTitle>
+          <CardDescription className="text-sm">
             Manage users who receive candidate notifications and have dashboard access
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Notifications</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile card layout */}
+          <div className="block sm:hidden">
+            <div className="space-y-3 p-4">
               {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell className="capitalize">{user.role}</TableCell>
-                  <TableCell>
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      user.receiveNotifications 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.receiveNotifications ? 'Enabled' : 'Disabled'}
+                <div key={user.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="font-medium truncate">{user.username}</div>
+                      <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize text-xs px-2 py-1 bg-muted rounded">{user.role}</span>
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${
+                          user.receiveNotifications 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.receiveNotifications ? 'Notifications On' : 'Notifications Off'}
+                        </div>
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(user.id)}
-                        disabled={deleteUserMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground">
+                    Created: {new Date(user.createdAt).toLocaleDateString()}
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(user)}
+                      className="flex-1"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(user.id)}
+                      disabled={deleteUserMutation.isPending}
+                      className="flex-1"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
               ))}
               {users.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No users found. Create your first user to get started.
-                  </TableCell>
-                </TableRow>
+                <div className="text-center py-8 text-muted-foreground">
+                  No users found. Create your first user to get started.
+                </div>
               )}
-            </TableBody>
-          </Table>
+            </div>
+          </div>
+          
+          {/* Desktop table layout */}
+          <div className="hidden sm:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[120px]">Username</TableHead>
+                  <TableHead className="min-w-[200px]">Email</TableHead>
+                  <TableHead className="min-w-[80px]">Role</TableHead>
+                  <TableHead className="min-w-[100px]">Notifications</TableHead>
+                  <TableHead className="min-w-[100px]">Created</TableHead>
+                  <TableHead className="min-w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      <div className="max-w-[120px] truncate">{user.username}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px] truncate">{user.email}</div>
+                    </TableCell>
+                    <TableCell className="capitalize">{user.role}</TableCell>
+                    <TableCell>
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.receiveNotifications 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.receiveNotifications ? 'Enabled' : 'Disabled'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(user.id)}
+                          disabled={deleteUserMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No users found. Create your first user to get started.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Edit User Dialog */}
       <Dialog open={editingUser !== null} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit User</DialogTitle>
+            <DialogDescription className="text-sm">
               Update user information and preferences
             </DialogDescription>
           </DialogHeader>

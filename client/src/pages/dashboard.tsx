@@ -37,29 +37,29 @@ export default function Dashboard() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center min-w-0 flex-1">
               <div className="flex-shrink-0 flex items-center">
-                <Truck className="text-primary text-2xl mr-3" />
-                <h1 className="text-xl font-bold text-slate-800">TruckRecruit Pro</h1>
+                <Truck className="text-primary text-xl sm:text-2xl mr-2 sm:mr-3" />
+                <h1 className="text-lg sm:text-xl font-bold text-slate-800 truncate">TruckRecruit Pro</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <button className="text-slate-600 hover:text-slate-800 transition-colors">
-                <Bell className="text-lg" />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button className="text-slate-600 hover:text-slate-800 transition-colors p-2">
+                <Bell className="text-base sm:text-lg" />
               </button>
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">JD</span>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs sm:text-sm font-medium">JD</span>
                 </div>
-                <span className="text-sm text-slate-700">John Doe</span>
+                <span className="text-xs sm:text-sm text-slate-700 hidden sm:inline">John Doe</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <StatsOverview />
         
         <CandidateTable
