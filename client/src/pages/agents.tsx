@@ -172,22 +172,64 @@ export default function Agents() {
                       <p><strong>Agent:</strong> {conversationDetails.agent_name || 'Unknown'}</p>
                       <p><strong>Duration:</strong> {Math.floor(conversationDetails.call_duration_secs / 60)}:{String(conversationDetails.call_duration_secs % 60).padStart(2, '0')}</p>
                       <p><strong>Messages:</strong> {conversationDetails.message_count}</p>
-                      <p><strong>Status:</strong> 
-                        <Badge className="ml-2" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
-                          {conversationDetails.call_successful}
-                        </Badge>
-                      </p>
+                      <p><strong>Status:</strong></p>
+                      <Badge className="mt-1" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
+                        {conversationDetails.call_successful}
+                      </Badge>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Extraction Data</h4>
-                    <div className="space-y-1 text-sm">
+                    <h4 className="font-semibold mb-2">Candidate Information</h4>
+                    <div className="space-y-2 text-sm">
                       {conversationDetails.analysis ? (
-                        Object.entries(conversationDetails.analysis).map(([key, value]: [string, any]) => (
-                          <p key={key}><strong>{key}:</strong> {JSON.stringify(value)}</p>
-                        ))
+                        <div className="grid grid-cols-1 gap-3">
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">First Name:</span>
+                            <span>{conversationDetails.analysis.First_Name || 'Not provided'}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">Last Name:</span>
+                            <span>{conversationDetails.analysis.Last_Name || 'Not provided'}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">Phone Number:</span>
+                            <span>{conversationDetails.analysis.Phone_number || 'Not provided'}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">Valid CDL Class A:</span>
+                            <Badge variant={conversationDetails.analysis.question_one ? 'default' : 'destructive'}>
+                              {conversationDetails.analysis.question_one ? 'Yes' : 'No'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">18+ Months Experience:</span>
+                            <Badge variant={conversationDetails.analysis.Question_two ? 'default' : 'destructive'}>
+                              {conversationDetails.analysis.Question_two ? 'Yes' : 'No'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">Clean Record (No Violations):</span>
+                            <Badge variant={conversationDetails.analysis.Question_three === false ? 'default' : 'destructive'}>
+                              {conversationDetails.analysis.Question_three === false ? 'Clean' : 'Has Violations'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-background rounded border">
+                            <span className="font-medium">Work Authorization:</span>
+                            <Badge variant={conversationDetails.analysis.question_four ? 'default' : 'destructive'}>
+                              {conversationDetails.analysis.question_four ? 'Authorized' : 'Not Authorized'}
+                            </Badge>
+                          </div>
+                          {conversationDetails.analysis.schedule && (
+                            <div className="flex justify-between items-start p-2 bg-background rounded border">
+                              <span className="font-medium">Schedule:</span>
+                              <span className="text-right">{conversationDetails.analysis.schedule}</span>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <p className="text-muted-foreground">No extraction data available</p>
+                        <div className="text-muted-foreground text-center py-4">
+                          No candidate data extracted from this call
+                        </div>
                       )}
                     </div>
                   </div>
