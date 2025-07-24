@@ -169,12 +169,16 @@ export default function Agents() {
                   <div>
                     <h4 className="font-semibold mb-2">Call Information</h4>
                     <div className="space-y-1 text-sm">
-                      <p><strong>Agent:</strong> {conversationDetails.agent_name || 'Unknown'}</p>
-                      <p><strong>Duration:</strong> {Math.floor(conversationDetails.call_duration_secs / 60)}:{String(conversationDetails.call_duration_secs % 60).padStart(2, '0')}</p>
-                      <p><strong>Messages:</strong> {conversationDetails.message_count}</p>
+                      <p><strong>Agent:</strong> Autumn Transport Inbound Recruiting Agent</p>
+                      <p><strong>Duration:</strong> {
+                        conversationDetails.conversation_initiation_client_data?.dynamic_variables?.system__call_duration_secs 
+                          ? `${Math.floor(conversationDetails.conversation_initiation_client_data.dynamic_variables.system__call_duration_secs / 60)}:${String(conversationDetails.conversation_initiation_client_data.dynamic_variables.system__call_duration_secs % 60).padStart(2, '0')}`
+                          : 'N/A'
+                      }</p>
+                      <p><strong>Messages:</strong> {conversationDetails.transcript?.length || 0}</p>
                       <p><strong>Status:</strong></p>
                       <Badge className="mt-1" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
-                        {conversationDetails.call_successful}
+                        {conversationDetails.call_successful || 'unknown'}
                       </Badge>
                     </div>
                   </div>
