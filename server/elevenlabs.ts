@@ -53,6 +53,18 @@ export class ElevenLabsService {
     }
   }
 
+  async getConversationDetails(conversationId: string): Promise<any> {
+    try {
+      console.log(`Fetching conversation details for ${conversationId}...`);
+      const data = await this.makeRequest(`/convai/conversations/${conversationId}`);
+      console.log(`Retrieved conversation details with ${data.transcript?.length || 0} transcript entries`);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch conversation details:', error);
+      throw error;
+    }
+  }
+
   async getConversation(conversationId: string): Promise<ConversationData | null> {
     try {
       console.log(`Fetching conversation ${conversationId} from ElevenLabs...`);

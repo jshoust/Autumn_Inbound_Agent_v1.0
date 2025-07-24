@@ -215,6 +215,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ElevenLabs conversation details endpoint
+  app.get('/api/elevenlabs/conversations/:id', async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const conversation = await elevenLabsService.getConversationDetails(conversationId);
+      res.json(conversation);
+    } catch (error) {
+      console.error('Error fetching ElevenLabs conversation details:', error);
+      res.status(500).json({ error: 'Failed to fetch conversation details' });
+    }
+  });
+
   // User management routes
   app.get('/api/users', async (req, res) => {
     try {

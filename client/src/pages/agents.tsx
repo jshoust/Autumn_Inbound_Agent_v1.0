@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bot, MessageCircle, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Bot, MessageCircle, Clock, Eye, User, Mic } from "lucide-react";
 
 
 
@@ -18,9 +22,17 @@ interface Conversation {
 }
 
 export default function Agents() {
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery<Conversation[]>({
     queryKey: ['/api/elevenlabs/conversations'],
     queryFn: () => fetch('/api/elevenlabs/conversations?limit=20').then(res => res.json()),
+  });
+
+  const { data: conversationDetails, isLoading: detailsLoading } = useQuery({
+    queryKey: ['/api/elevenlabs/conversations', selectedConversation],
+    queryFn: () => fetch(`/api/elevenlabs/conversations/${selectedConversation}`).then(res => res.json()),
+    enabled: !!selectedConversation,
   });
 
   return (
@@ -63,6 +75,7 @@ export default function Agents() {
                       <TableHead>Result</TableHead>
                       <TableHead>Duration</TableHead>
                       <TableHead>Started</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -113,6 +126,17 @@ export default function Agents() {
                         <TableCell>
                           {new Date(conversation.start_time_unix_secs * 1000).toLocaleString()}
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedConversation(conversation.conversation_id)}
+                            className="flex items-center gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -121,6 +145,100 @@ export default function Agents() {
             </CardContent>
           </Card>
 
+      <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Call Details</DialogTitle>
+            <DialogDescription>
+              Conversation transcript and extraction data
+            </DialogDescription>
+          </DialogHeader>
+          
+          {detailsLoading ? (
+            <div className="space-y-4">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          ) : conversationDetails ? (
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-6">
+                {/* Call Summary */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <h4 className="font-semibold mb-2">Call Information</h4>
+                    <div className="space-y-1 text-sm">
+                      <p><strong>Agent:</strong> {conversationDetails.agent_name || 'Unknown'}</p>
+                      <p><strong>Duration:</strong> {Math.floor(conversationDetails.call_duration_secs / 60)}:{String(conversationDetails.call_duration_secs % 60).padStart(2, '0')}</p>
+                      <p><strong>Messages:</strong> {conversationDetails.message_count}</p>
+                      <p><strong>Status:</strong> 
+                        <Badge className="ml-2" variant={conversationDetails.call_successful === 'success' ? 'default' : 'destructive'}>
+                          {conversationDetails.call_successful}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Extraction Data</h4>
+                    <div className="space-y-1 text-sm">
+                      {conversationDetails.analysis ? (
+                        Object.entries(conversationDetails.analysis).map(([key, value]: [string, any]) => (
+                          <p key={key}><strong>{key}:</strong> {JSON.stringify(value)}</p>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No extraction data available</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transcript */}
+                <div>
+                  <h4 className="font-semibold mb-3">Conversation Transcript</h4>
+                  <div className="space-y-3">
+                    {conversationDetails.transcript && conversationDetails.transcript.length > 0 ? (
+                      conversationDetails.transcript.map((entry: any, index: number) => (
+                        <div
+                          key={index}
+                          className={`flex gap-3 p-3 rounded-lg ${
+                            entry.role === 'user' ? 'bg-blue-50 dark:bg-blue-950' : 'bg-gray-50 dark:bg-gray-900'
+                          }`}
+                        >
+                          <div className="flex-shrink-0 mt-1">
+                            {entry.role === 'user' ? (
+                              <User className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <Mic className="h-4 w-4 text-gray-600" />
+                            )}
+                          </div>
+                          <div className="flex-grow">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm capitalize">
+                                {entry.role === 'user' ? 'Caller' : 'Agent'}
+                              </span>
+                              {entry.timestamp && (
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(entry.timestamp * 1000).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm">{entry.message || entry.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">
+                        No transcript available for this conversation
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
