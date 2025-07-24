@@ -7,16 +7,18 @@ This is a full-stack driver recruiting application that processes inbound calls 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call history integrated into main dashboard.
 
 ## System Architecture
 
 ### Frontend Architecture
 - **Framework**: React with TypeScript using Vite for development
-- **Routing**: Wouter for client-side routing
+- **Routing**: Wouter for client-side routing (Dashboard and Settings pages)
 - **UI Framework**: Radix UI components with shadcn/ui styling
 - **Styling**: Tailwind CSS with CSS variables for theming
 - **State Management**: TanStack Query for server state management
 - **Design System**: Custom component library based on Radix primitives
+- **Mobile Responsiveness**: Complete mobile-first design with card layouts for small screens
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express server
@@ -45,10 +47,11 @@ Preferred communication style: Simple, everyday language.
 - **GET /api/stats**: Dashboard statistics and metrics
 
 ### Frontend Components
-- **Dashboard**: Main application view with stats overview and candidate management
+- **Dashboard**: Main application view with stats overview, recent calls, and candidate management
 - **CandidateTable**: Searchable, filterable table for candidate review
 - **TranscriptModal**: Detailed call transcript viewer with qualification controls
 - **StatsOverview**: Real-time dashboard metrics
+- **Recent Calls Section**: Live ElevenLabs conversation history with mobile-responsive design
 
 ### Qualification Logic
 - **CDL Validation**: Checks for valid CDL license (specifically CDL-A)

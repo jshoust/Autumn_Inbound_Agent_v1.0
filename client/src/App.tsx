@@ -4,10 +4,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Settings as SettingsIcon, Bot } from "lucide-react";
+import { LayoutDashboard, Settings as SettingsIcon } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Settings from "@/pages/settings";
-import Agents from "@/pages/agents";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,16 +30,6 @@ function Router() {
                     <span className="hidden sm:inline">Dashboard</span>
                   </Button>
                 </Link>
-                <Link href="/agents">
-                  <Button 
-                    variant={location === "/agents" ? "default" : "ghost"} 
-                    size="sm"
-                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
-                  >
-                    <Bot className="h-4 w-4" />
-                    <span className="hidden sm:inline">Agents</span>
-                  </Button>
-                </Link>
                 <Link href="/settings">
                   <Button 
                     variant={location === "/settings" ? "default" : "ghost"} 
@@ -60,7 +49,6 @@ function Router() {
       <main className="container mx-auto px-4 py-4 sm:py-6">
         <Switch>
           <Route path="/" component={Dashboard} />
-          <Route path="/agents" component={Agents} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
