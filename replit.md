@@ -78,8 +78,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Services
 - **ElevenLabs Voice Agent**: Handles inbound calls and provides webhook integration
-  - Webhook endpoint: `/api/inbound`
-  - No API keys required in this application
+  - Webhook endpoint: `/api/inbound` with signature verification
+  - Webhook secret configured: `ELEVENLABS_WEBHOOK_SECRET`
   - ElevenLabs sends call data via webhook after call completion
 - **Postmark Email Service**: Sends qualification notifications to candidates
   - Requires POSTMARK_SERVER_TOKEN and FROM_EMAIL environment variables

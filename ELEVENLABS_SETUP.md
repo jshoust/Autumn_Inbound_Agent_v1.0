@@ -19,7 +19,8 @@ In your ElevenLabs account:
 1. Go to your Voice Agent settings
 2. Find the "Webhooks" or "Integration" section
 3. Set the webhook URL to: `https://your-replit-app-url.replit.app/api/inbound`
-4. Make sure to send call completion data including:
+4. Set the webhook secret to: `wsec_adbb48427559a6a30d6834a92ea98f7cc15883f6c584f136923bcab9dc9f08f4`
+5. Make sure to send call completion data including:
    - `call_id`: Unique identifier for the call
    - `transcript`: Full conversation transcript
    - `phone`: Caller's phone number

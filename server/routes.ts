@@ -4,11 +4,39 @@ import { storage } from "./storage";
 import { insertCandidateSchema } from "@shared/schema";
 import { emailService } from "./email";
 import { z } from "zod";
+import crypto from "crypto";
+
+// Webhook signature verification
+function verifyElevenLabsWebhook(payload: string, signature: string, secret: string): boolean {
+  if (!secret) return true; // Skip verification if no secret configured
+  
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+    
+  return `sha256=${expectedSignature}` === signature;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Webhook endpoint to receive call data from ElevenLabs
   app.post('/api/inbound', async (req, res) => {
     try {
+      // Verify webhook signature if secret is configured
+      const signature = req.headers['x-elevenlabs-signature'] as string;
+      const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
+      
+      if (webhookSecret && signature) {
+        const payload = JSON.stringify(req.body);
+        const isValid = verifyElevenLabsWebhook(payload, signature, webhookSecret);
+        
+        if (!isValid) {
+          console.error('Invalid webhook signature');
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+        console.log('Webhook signature verified successfully');
+      }
+      
       console.log('Received ElevenLabs webhook:', JSON.stringify(req.body, null, 2));
       const { call_id, transcript, phone, answers } = req.body;
 
