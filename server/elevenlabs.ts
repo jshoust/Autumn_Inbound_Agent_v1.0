@@ -58,6 +58,17 @@ export class ElevenLabsService {
       console.log(`Fetching conversation details for ${conversationId}...`);
       const data = await this.makeRequest(`/convai/conversations/${conversationId}`);
       console.log(`Retrieved conversation details with ${data.transcript?.length || 0} transcript entries`);
+      
+      // Log the exact API response structure
+      console.log('=== API RESPONSE STRUCTURE ===');
+      console.log(JSON.stringify({
+        transcript_sample: data.transcript?.[0],
+        data_collection: data.data_collection,
+        call_successful: data.call_successful,
+        conversation_id: data.conversation_id,
+        agent_id: data.agent_id
+      }, null, 2));
+      console.log('=== END API RESPONSE ===');
 
       return data;
     } catch (error) {
