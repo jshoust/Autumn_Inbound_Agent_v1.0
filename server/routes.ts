@@ -192,65 +192,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint to simulate ElevenLabs webhook (for testing purposes)
-  app.post('/api/test-webhook', async (req, res) => {
-    const testData = {
-      call_id: `test-${Date.now()}`,
-      transcript: "AGENT: Hello, thank you for calling about truck driving opportunities. Do you have a valid CDL-A license?\nCALLER: Yes, I have my CDL-A license for the past 3 years.\nAGENT: Great! How many years of driving experience do you have?\nCALLER: I've been driving trucks for about 5 years now.\nAGENT: Excellent! We'll review your application and get back to you soon.",
-      phone: "555-0123",
-      answers: {
-        cdl: true,
-        cdl_type: "CDL-A",
-        experience: "5"
-      }
-    };
-
+  // ElevenLabs agents endpoint
+  app.get('/api/elevenlabs/agents', async (req, res) => {
     try {
-      console.log('Test webhook triggered with data:', JSON.stringify(testData, null, 2));
-      
-      // Process the same way as real webhook
-      const { call_id, transcript, phone, answers } = testData;
-      
-      let qualified = null;
-      if (answers) {
-        const hasValidCDL = answers.cdl === true || answers.cdl_type === 'CDL-A';
-        const hasExperience = answers.experience && parseInt(answers.experience) >= 2;
-        qualified = hasValidCDL && hasExperience;
-      }
-
-      const experience = answers?.experience ? `${answers.experience} years` : undefined;
-      const cdlType = answers?.cdl_type || (answers?.cdl ? 'CDL-A' : undefined);
-
-      const candidateData = {
-        callId: call_id,
-        phone,
-        transcript,
-        answers,
-        qualified,
-        experience,
-        cdlType
-      };
-
-      const candidate = await storage.createCandidate(candidateData);
-      
-      if (qualified === true) {
-        try {
-          await emailService.sendRecruiterNotification(candidate);
-          console.log('Test recruiter notification sent successfully');
-        } catch (error) {
-          console.error('Failed to send test recruiter notification:', error);
-        }
-      }
-      
-      res.status(200).json({ 
-        status: 'Test successful', 
-        candidate,
-        qualified,
-        email_sent: qualified === true 
-      });
+      const agents = await elevenLabsService.getAgents();
+      res.json(agents);
     } catch (error) {
-      console.error('Error in test webhook:', error);
-      res.status(500).json({ error: 'Test failed' });
+      console.error('Error fetching ElevenLabs agents:', error);
+      res.status(500).json({ error: 'Failed to fetch agents' });
     }
   });
 

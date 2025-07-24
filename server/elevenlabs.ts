@@ -11,24 +11,41 @@ export interface ConversationData {
 }
 
 export class ElevenLabsService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const response = await fetch(`https://api.elevenlabs.io/v1${endpoint}`, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+        ...options.headers,
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  async getAgents(): Promise<any[]> {
+    try {
+      console.log('Fetching agents from ElevenLabs...');
+      const data = await this.makeRequest('/convai/agents');
+      console.log(`Found ${data.agents?.length || 0} agents`);
+      return data.agents || [];
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      throw error;
+    }
+  }
+
   async getConversation(conversationId: string): Promise<ConversationData | null> {
     try {
       console.log(`Fetching conversation ${conversationId} from ElevenLabs...`);
       
-      const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'xi-api-key': process.env.ELEVENLABS_API_KEY || ''
-        }
-      });
-
-      if (!response.ok) {
-        console.warn(`Failed to fetch conversation ${conversationId}: ${response.status}`);
-        return null;
-      }
-
-      const conversation = await response.json();
+      const conversation = await this.makeRequest(`/convai/conversations/${conversationId}`);
       
       if (!conversation) {
         console.warn(`Conversation ${conversationId} not found`);
