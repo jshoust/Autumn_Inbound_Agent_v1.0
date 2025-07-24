@@ -63,7 +63,9 @@ export class ElevenLabsService {
         hasDataCollection: !!data.data_collection,
         transcriptLength: data.transcript?.length || 0,
         dataCollectionKeys: data.data_collection ? Object.keys(data.data_collection) : [],
-        callSuccessful: data.call_successful
+        callSuccessful: data.call_successful,
+        firstTranscriptEntry: data.transcript?.[0] ? Object.keys(data.transcript[0]) : [],
+        sampleTranscriptEntry: data.transcript?.[0] || null
       });
       return data;
     } catch (error) {

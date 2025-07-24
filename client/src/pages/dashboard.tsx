@@ -382,8 +382,9 @@ export default function Dashboard() {
                           )}
                         </div>
                       ) : (
-                        <div className="text-center py-4 text-muted-foreground">
-                          <p>No candidate data extracted from this conversation</p>
+                        <div className="text-center py-4 text-muted-foreground bg-orange-50 rounded border">
+                          <p className="font-medium">No automatic data extraction available</p>
+                          <p className="text-xs mt-1">This conversation may need manual review to extract candidate information from the transcript below.</p>
                         </div>
                       )}
                     </div>
@@ -399,15 +400,17 @@ export default function Dashboard() {
                         <div
                           key={index}
                           className={`p-3 rounded-lg text-xs sm:text-sm ${
-                            message.speaker === 'agent'
+                            message.role === 'agent' || message.speaker === 'agent'
                               ? 'bg-blue-50 ml-4'
                               : 'bg-gray-50 mr-4'
                           }`}
                         >
                           <div className="font-medium mb-1 capitalize">
-                            {message.speaker === 'agent' ? 'Agent' : 'Caller'}
+                            {(message.role === 'agent' || message.speaker === 'agent') ? 'Agent' : 'Caller'}
                           </div>
-                          <div className="whitespace-pre-wrap">{message.text}</div>
+                          <div className="whitespace-pre-wrap">
+                            {message.message || message.text || message.content || 'No message content'}
+                          </div>
                         </div>
                       ))}
                     </div>
