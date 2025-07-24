@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCandidateSchema } from "@shared/schema";
+import { insertCandidateSchema, insertUserSchema, updateUserSchema } from "@shared/schema";
 import { emailService } from "./email";
 import { elevenLabsService } from "./elevenlabs";
 import { z } from "zod";
@@ -167,9 +167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email notification if candidate was manually qualified
       if (qualified === true) {
         try {
-          await emailService.sendQualificationNotification(candidate);
+          await emailService.sendRecruiterNotification(candidate);
         } catch (error) {
-          console.error('Failed to send qualification email:', error);
+          console.error('Failed to send recruiter notification:', error);
           // Don't fail the whole request if email fails
         }
       }
@@ -235,10 +235,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (qualified === true) {
         try {
-          await emailService.sendQualificationNotification(candidate);
-          console.log('Test qualification email sent successfully');
+          await emailService.sendRecruiterNotification(candidate);
+          console.log('Test recruiter notification sent successfully');
         } catch (error) {
-          console.error('Failed to send test qualification email:', error);
+          console.error('Failed to send test recruiter notification:', error);
         }
       }
       
@@ -251,6 +251,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error in test webhook:', error);
       res.status(500).json({ error: 'Test failed' });
+    }
+  });
+
+  // User management routes
+  app.get('/api/users', async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+
+  app.post('/api/users', async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(400).json({ error: 'Failed to create user' });
+    }
+  });
+
+  app.patch('/api/users/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = updateUserSchema.parse(req.body);
+      const user = await storage.updateUser(parseInt(id), updateData);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(400).json({ error: 'Failed to update user' });
+    }
+  });
+
+  app.delete('/api/users/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteUser(parseInt(id));
+      
+      if (!deleted) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ error: 'Failed to delete user' });
     }
   });
 

@@ -1,11 +1,15 @@
-import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser } from "@shared/schema";
+import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser, type UpdateUser } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, like, or, and, isNull } from "drizzle-orm";
 
 export interface IStorage {
+  // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUsers(): Promise<User[]>;
+  updateUser(id: number, updateUser: UpdateUser): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Candidate methods
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
@@ -36,6 +40,24 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: number, updateUser: UpdateUser): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updateUser)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   async createCandidate(insertCandidate: InsertCandidate): Promise<Candidate> {

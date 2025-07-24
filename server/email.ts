@@ -1,5 +1,6 @@
 import { ServerClient } from "postmark";
 import type { Candidate } from "@shared/schema";
+import { storage } from "./storage";
 
 const postmarkClient = new ServerClient(process.env.POSTMARK_SERVER_TOKEN || "");
 
@@ -19,24 +20,33 @@ export class PostmarkEmailService implements EmailService {
       return;
     }
 
-    if (!process.env.RECRUITER_EMAIL) {
-      console.warn("RECRUITER_EMAIL not configured, skipping recruiter notification");
-      return;
-    }
-
     try {
-      await postmarkClient.sendEmail({
-        From: process.env.FROM_EMAIL,
-        To: process.env.RECRUITER_EMAIL,
-        Subject: `New Qualified Driver Candidate - ${candidate.phone}`,
-        HtmlBody: this.generateRecruiterNotificationHtml(candidate),
-        TextBody: this.generateRecruiterNotificationText(candidate),
-        MessageStream: "outbound"
-      });
+      // Get all users who want to receive notifications
+      const users = await storage.getUsers();
+      const notificationUsers = users.filter(user => user.receiveNotifications);
       
-      console.log(`Recruiter notification sent for candidate ${candidate.id}`);
+      if (notificationUsers.length === 0) {
+        console.warn("No users configured to receive notifications");
+        return;
+      }
+
+      // Send email to each user who wants notifications
+      const emailPromises = notificationUsers.map(user => 
+        postmarkClient.sendEmail({
+          From: process.env.FROM_EMAIL!,
+          To: user.email,
+          Subject: `New Qualified Driver Candidate - ${candidate.phone}`,
+          HtmlBody: this.generateRecruiterNotificationHtml(candidate),
+          TextBody: this.generateRecruiterNotificationText(candidate),
+          MessageStream: "outbound"
+        })
+      );
+
+      await Promise.all(emailPromises);
+      
+      console.log(`Recruiter notifications sent to ${notificationUsers.length} users for candidate ${candidate.id}`);
     } catch (error) {
-      console.error("Failed to send recruiter notification:", error);
+      console.error("Failed to send recruiter notifications:", error);
       throw error;
     }
   }
