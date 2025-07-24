@@ -84,7 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const finalPhone = phone || caller_number || 'unknown';
+      // Extract phone from data collection if available
+      const extractedPhone = processedAnswers?.phone_number || processedAnswers?.Phone_number;
+      const finalPhone = phone || caller_number || extractedPhone || 'unknown';
       const finalCallId = call_id || conversation_id || `conv-${Date.now()}`;
 
       console.log('DEBUGGING CANDIDATE DATA:');
