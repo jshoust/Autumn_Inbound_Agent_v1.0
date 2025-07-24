@@ -307,6 +307,12 @@ export default function Dashboard() {
           ) : conversationDetails ? (
             <ScrollArea className="max-h-[70vh] sm:max-h-[60vh]">
               <div className="space-y-4 sm:space-y-6">
+                {/* Debug info - will remove after fix */}
+                <div className="p-2 bg-yellow-100 rounded text-xs">
+                  <strong>Debug:</strong> Data loaded - 
+                  transcript: {conversationDetails.transcript?.length || 0}, 
+                  data_collection: {conversationDetails.data_collection ? 'yes' : 'no'}
+                </div>
                 {/* Call Summary */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                   <div>

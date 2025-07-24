@@ -58,6 +58,13 @@ export class ElevenLabsService {
       console.log(`Fetching conversation details for ${conversationId}...`);
       const data = await this.makeRequest(`/convai/conversations/${conversationId}`);
       console.log(`Retrieved conversation details with ${data.transcript?.length || 0} transcript entries`);
+      console.log('Raw conversation data structure:', {
+        hasTranscript: !!data.transcript,
+        hasDataCollection: !!data.data_collection,
+        transcriptLength: data.transcript?.length || 0,
+        dataCollectionKeys: data.data_collection ? Object.keys(data.data_collection) : [],
+        callSuccessful: data.call_successful
+      });
       return data;
     } catch (error) {
       console.error('Failed to fetch conversation details:', error);
