@@ -220,6 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       const conversation = await elevenLabsService.getConversationDetails(conversationId);
+      
+      // FORCED LOG - EXACT API RESPONSE FOR USER
+      console.log('\n=== EXACT API RESPONSE FOR USER ===');
+      console.log('transcript[0]:', JSON.stringify(conversation.transcript?.[0], null, 2));
+      console.log('data_collection:', JSON.stringify(conversation.data_collection, null, 2));
+      console.log('Full response keys:', Object.keys(conversation));
+      console.log('=== END EXACT RESPONSE ===\n');
+      
       res.json(conversation);
     } catch (error) {
       console.error('Error fetching ElevenLabs conversation details:', error);
