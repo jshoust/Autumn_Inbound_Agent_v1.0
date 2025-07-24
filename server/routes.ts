@@ -117,12 +117,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const candidate = await storage.createCandidate(candidateData);
       
-      // Send email notification if candidate is automatically qualified
+      // Send recruiter notification for qualified candidates
       if (qualified === true) {
         try {
-          await emailService.sendQualificationNotification(candidate);
+          await emailService.sendRecruiterNotification(candidate);
         } catch (error) {
-          console.error('Failed to send qualification email:', error);
+          console.error('Failed to send recruiter notification:', error);
           // Don't fail the whole request if email fails
         }
       }

@@ -4,70 +4,66 @@ import type { Candidate } from "@shared/schema";
 const postmarkClient = new ServerClient(process.env.POSTMARK_SERVER_TOKEN || "");
 
 export interface EmailService {
-  sendQualificationNotification(candidate: Candidate): Promise<void>;
+  sendRecruiterNotification(candidate: Candidate): Promise<void>;
 }
 
 export class PostmarkEmailService implements EmailService {
-  async sendQualificationNotification(candidate: Candidate): Promise<void> {
+  async sendRecruiterNotification(candidate: Candidate): Promise<void> {
     if (!process.env.POSTMARK_SERVER_TOKEN) {
-      console.warn("POSTMARK_SERVER_TOKEN not configured, skipping email notification");
+      console.warn("POSTMARK_SERVER_TOKEN not configured, skipping recruiter notification");
       return;
     }
 
     if (!process.env.FROM_EMAIL) {
-      console.warn("FROM_EMAIL not configured, skipping email notification");
+      console.warn("FROM_EMAIL not configured, skipping recruiter notification");
       return;
     }
 
-    if (!candidate.phone) {
-      console.warn("Candidate has no phone number, cannot send notification");
+    if (!process.env.RECRUITER_EMAIL) {
+      console.warn("RECRUITER_EMAIL not configured, skipping recruiter notification");
       return;
     }
-
-    // Extract potential email from phone or use a placeholder
-    // In a real application, you'd need to collect email during the call or have a way to convert phone to email
-    const candidateEmail = this.extractOrGenerateEmail(candidate.phone);
 
     try {
       await postmarkClient.sendEmail({
         From: process.env.FROM_EMAIL,
-        To: candidateEmail,
-        Subject: "Congratulations! You've Been Pre-Qualified for Truck Driving Opportunities",
-        HtmlBody: this.generateQualificationEmailHtml(candidate),
-        TextBody: this.generateQualificationEmailText(candidate),
+        To: process.env.RECRUITER_EMAIL,
+        Subject: `New Qualified Driver Candidate - ${candidate.phone}`,
+        HtmlBody: this.generateRecruiterNotificationHtml(candidate),
+        TextBody: this.generateRecruiterNotificationText(candidate),
         MessageStream: "outbound"
       });
       
-      console.log(`Qualification email sent to ${candidateEmail} for candidate ${candidate.id}`);
+      console.log(`Recruiter notification sent for candidate ${candidate.id}`);
     } catch (error) {
-      console.error("Failed to send qualification email:", error);
+      console.error("Failed to send recruiter notification:", error);
       throw error;
     }
   }
 
-  private extractOrGenerateEmail(phone: string): string {
-    // In a real application, you would have collected email during the call
-    // For demo purposes, we'll use a placeholder pattern
-    const cleanPhone = phone.replace(/\D/g, '');
-    return `driver.${cleanPhone}@placeholder-domain.com`;
-  }
+  private generateRecruiterNotificationHtml(candidate: Candidate): string {
+    const qualificationBadge = candidate.qualified === true ? 
+      '<span style="background: #16a34a; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">QUALIFIED</span>' :
+      candidate.qualified === false ?
+      '<span style="background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">NOT QUALIFIED</span>' :
+      '<span style="background: #f59e0b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">PENDING REVIEW</span>';
 
-  private generateQualificationEmailHtml(candidate: Candidate): string {
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Pre-Qualification Notification</title>
+        <title>New Driver Candidate</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+          .header { background: #1f2937; color: white; padding: 20px; text-align: center; }
           .content { padding: 20px; background: #f9f9f9; }
+          .candidate-info { background: white; padding: 15px; border-left: 4px solid #2563eb; margin: 15px 0; }
           .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; }
           .button { 
             display: inline-block; 
-            background: #16a34a; 
+            background: #2563eb; 
             color: white; 
             padding: 12px 24px; 
             text-decoration: none; 
@@ -79,45 +75,47 @@ export class PostmarkEmailService implements EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🚛 TruckRecruit Pro</h1>
-            <h2>Pre-Qualification Approved!</h2>
+            <h1>📞 TruckRecruit Pro</h1>
+            <h2>New Qualified Driver Candidate</h2>
           </div>
           
           <div class="content">
-            <h3>Congratulations!</h3>
-            <p>Based on your recent phone screening, you've been pre-qualified for truck driving opportunities with our partner companies.</p>
+            <div class="candidate-info">
+              <h3>Candidate Details ${qualificationBadge}</h3>
+              <ul>
+                <li><strong>Phone:</strong> ${candidate.phone}</li>
+                <li><strong>CDL Status:</strong> ${candidate.cdlType || 'Not specified'}</li>
+                <li><strong>Experience:</strong> ${candidate.experience || 'Not specified'}</li>
+                <li><strong>Call ID:</strong> #${candidate.callId || candidate.id}</li>
+                <li><strong>Call Time:</strong> ${new Date(candidate.createdAt).toLocaleString()}</li>
+              </ul>
+            </div>
             
-            <h4>Your Qualification Details:</h4>
-            <ul>
-              <li><strong>Phone:</strong> ${candidate.phone}</li>
-              <li><strong>CDL Status:</strong> ${candidate.cdlType || 'Under Review'}</li>
-              <li><strong>Experience:</strong> ${candidate.experience || 'Under Review'}</li>
-              <li><strong>Call ID:</strong> #${candidate.callId || candidate.id}</li>
-            </ul>
-            
-            <h4>Next Steps:</h4>
-            <p>Our recruitment team will contact you within 24-48 hours to discuss available opportunities and next steps in the hiring process.</p>
-            
-            <p>In the meantime, please ensure you have the following documents ready:</p>
-            <ul>
-              <li>Valid CDL-A License</li>
-              <li>DOT Medical Certificate</li>
-              <li>Driving Record (MVR)</li>
-              <li>Employment History</li>
-            </ul>
-            
-            ${process.env.CONTACT_PHONE ? `
-            <div style="text-align: center;">
-              <a href="tel:${process.env.CONTACT_PHONE}" class="button">
-                Call Us: ${process.env.CONTACT_PHONE}
-              </a>
+            ${candidate.transcript ? `
+            <h4>Call Summary:</h4>
+            <div style="background: white; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 14px; max-height: 200px; overflow-y: auto;">
+              ${JSON.stringify(candidate.transcript, null, 2)}
             </div>
             ` : ''}
+            
+            <h4>Recommended Actions:</h4>
+            <ul>
+              <li>Review candidate qualification in the dashboard</li>
+              <li>Contact candidate within 24 hours if qualified</li>
+              <li>Schedule follow-up interview if needed</li>
+              <li>Request additional documentation</li>
+            </ul>
+            
+            <div style="text-align: center;">
+              <a href="${process.env.DASHBOARD_URL || 'http://localhost:5000'}" class="button">
+                View in Dashboard
+              </a>
+            </div>
           </div>
           
           <div class="footer">
-            <p>This is an automated message from TruckRecruit Pro. Please do not reply to this email.</p>
-            ${process.env.CONTACT_PHONE ? `<p>If you have questions, call us at ${process.env.CONTACT_PHONE}</p>` : ''}
+            <p>This is an automated notification from TruckRecruit Pro</p>
+            <p>Candidate ID: ${candidate.id} | Generated: ${new Date().toLocaleString()}</p>
           </div>
         </div>
       </body>
@@ -125,30 +123,30 @@ export class PostmarkEmailService implements EmailService {
     `;
   }
 
-  private generateQualificationEmailText(candidate: Candidate): string {
+  private generateRecruiterNotificationText(candidate: Candidate): string {
+    const status = candidate.qualified === true ? 'QUALIFIED' : 
+                  candidate.qualified === false ? 'NOT QUALIFIED' : 'PENDING REVIEW';
+    
     return `
-TruckRecruit Pro - Pre-Qualification Approved!
+TruckRecruit Pro - New Driver Candidate [${status}]
 
-Congratulations!
-
-Based on your recent phone screening, you've been pre-qualified for truck driving opportunities with our partner companies.
-
-Your Qualification Details:
+Candidate Details:
 - Phone: ${candidate.phone}
-- CDL Status: ${candidate.cdlType || 'Under Review'}
-- Experience: ${candidate.experience || 'Under Review'}
+- CDL Status: ${candidate.cdlType || 'Not specified'}
+- Experience: ${candidate.experience || 'Not specified'}
 - Call ID: #${candidate.callId || candidate.id}
+- Call Time: ${new Date(candidate.createdAt).toLocaleString()}
 
-Next Steps:
-Our recruitment team will contact you within 24-48 hours to discuss available opportunities and next steps in the hiring process.
+${candidate.transcript ? 'Call transcript available in dashboard' : 'No transcript available'}
 
-Please ensure you have the following documents ready:
-• Valid CDL-A License
-• DOT Medical Certificate
-• Driving Record (MVR)
-• Employment History
+Recommended Actions:
+• Review candidate qualification in dashboard
+• Contact candidate within 24 hours if qualified
+• Schedule follow-up interview if needed
+• Request additional documentation
 
-${process.env.CONTACT_PHONE ? `Questions? Call us at ${process.env.CONTACT_PHONE}\n\n` : ''}This is an automated message from TruckRecruit Pro.
+Dashboard: ${process.env.DASHBOARD_URL || 'http://localhost:5000'}
+Candidate ID: ${candidate.id}
     `;
   }
 }
