@@ -78,6 +78,12 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Services
 - **ElevenLabs Voice Agent**: Handles inbound calls and provides webhook integration
+  - Webhook endpoint: `/api/inbound`
+  - No API keys required in this application
+  - ElevenLabs sends call data via webhook after call completion
+- **Postmark Email Service**: Sends qualification notifications to candidates
+  - Requires POSTMARK_SERVER_TOKEN and FROM_EMAIL environment variables
+  - Automatically sends emails when candidates are qualified
 - **Neon PostgreSQL**: Serverless database hosting
 - **Replit**: Development and hosting platform
 
