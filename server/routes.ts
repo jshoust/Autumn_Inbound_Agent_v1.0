@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCandidateSchema } from "@shared/schema";
 import { emailService } from "./email";
+import { elevenLabsService } from "./elevenlabs";
 import { z } from "zod";
 import crypto from "crypto";
 
@@ -38,25 +39,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('Received ElevenLabs webhook:', JSON.stringify(req.body, null, 2));
-      const { call_id, transcript, phone, answers } = req.body;
+      
+      // Extract conversation ID and basic data from webhook
+      const { 
+        call_id, 
+        conversation_id, 
+        transcript, 
+        phone, 
+        answers,
+        caller_number,
+        agent_id 
+      } = req.body;
+      
+      let conversationData = null;
+      let processedTransript = transcript;
+      let processedAnswers = answers;
+      
+      // If we have a conversation_id, fetch full conversation details
+      if (conversation_id && process.env.ELEVENLABS_API_KEY) {
+        try {
+          conversationData = await elevenLabsService.getConversation(conversation_id);
+          if (conversationData) {
+            console.log(`Retrieved full conversation with ${conversationData.transcript.length} messages`);
+            
+            // Use the fetched transcript and analyze it
+            processedTransript = conversationData.transcript
+              .map(t => `${t.speaker}: ${t.text}`)
+              .join('\n');
+              
+            // Analyze conversation for qualification data
+            const analysis = await elevenLabsService.analyzeConversation(conversationData.transcript);
+            processedAnswers = {
+              ...answers,
+              cdl: analysis.cdl,
+              cdl_type: analysis.cdlType,
+              experience: analysis.experience
+            };
+            
+            console.log('Conversation analysis:', analysis);
+          }
+        } catch (error) {
+          console.error('Failed to fetch conversation details:', error);
+          // Continue with webhook data if API fetch fails
+        }
+      }
+      
+      const finalPhone = phone || caller_number || 'unknown';
+      const finalCallId = call_id || conversation_id || `conv-${Date.now()}`;
 
-      // Basic qualification scoring logic
+      // Basic qualification scoring logic using processed answers
       let qualified = null;
-      if (answers) {
-        const hasValidCDL = answers.cdl === true || answers.cdl_type === 'CDL-A';
-        const hasExperience = answers.experience && parseInt(answers.experience) >= 2;
+      if (processedAnswers) {
+        const hasValidCDL = processedAnswers.cdl === true || processedAnswers.cdl_type === 'CDL-A';
+        const hasExperience = processedAnswers.experience && parseInt(processedAnswers.experience) >= 2;
         qualified = hasValidCDL && hasExperience;
       }
 
-      // Extract experience and CDL type from answers
-      const experience = answers?.experience ? `${answers.experience} years` : undefined;
-      const cdlType = answers?.cdl_type || (answers?.cdl ? 'CDL-A' : undefined);
+      // Extract experience and CDL type from processed answers
+      const experience = processedAnswers?.experience ? `${processedAnswers.experience} years` : undefined;
+      const cdlType = processedAnswers?.cdl_type || (processedAnswers?.cdl ? 'CDL-A' : undefined);
+
+      // Ensure required fields are not null
+      if (!finalPhone) {
+        console.error('Missing required phone number');
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
 
       const candidateData = {
-        callId: call_id,
-        phone,
-        transcript,
-        answers,
+        callId: finalCallId,
+        phone: finalPhone,
+        transcript: processedTransript || null,
+        answers: processedAnswers || null,
         qualified,
         experience,
         cdlType
