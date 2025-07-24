@@ -87,6 +87,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalPhone = phone || caller_number || 'unknown';
       const finalCallId = call_id || conversation_id || `conv-${Date.now()}`;
 
+      console.log('DEBUGGING CANDIDATE DATA:');
+      console.log('finalCallId:', finalCallId);
+      console.log('finalPhone:', finalPhone);
+
       // Basic qualification scoring logic using processed answers
       let qualified = null;
       if (processedAnswers) {
@@ -95,25 +99,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         qualified = hasValidCDL && hasExperience;
       }
 
-      // Extract experience and CDL type from processed answers
-      const experience = processedAnswers?.experience ? `${processedAnswers.experience} years` : undefined;
-      const cdlType = processedAnswers?.cdl_type || (processedAnswers?.cdl ? 'CDL-A' : undefined);
-
       // Ensure required fields are not null
       if (!finalPhone) {
         console.error('Missing required phone number');
         return res.status(400).json({ error: 'Phone number is required' });
       }
 
+      if (!finalCallId) {
+        console.error('Missing required conversation ID');
+        return res.status(400).json({ error: 'Conversation ID is required' });
+      }
+
       const candidateData = {
-        callId: finalCallId,
+        conversationId: finalCallId,  // This maps to conversation_id in DB 
+        callId: finalCallId,          // This maps to call_id in DB
         phone: finalPhone,
         transcript: processedTransript || null,
-        answers: processedAnswers || null,
-        qualified,
-        experience,
-        cdlType
+        dataCollection: processedAnswers || null,
+        qualified: qualified || false,
+        rawConversationData: req.body || null
       };
+
+      console.log('Final candidateData:', JSON.stringify(candidateData, null, 2));
 
       const candidate = await storage.createCandidate(candidateData);
       
