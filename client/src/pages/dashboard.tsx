@@ -13,6 +13,7 @@ export default function Dashboard() {
 
   const { data: candidates = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/candidates'],
+    refetchInterval: 3000, // Poll every 3 seconds for new calls
   });
 
   const handleViewTranscript = (candidate: Candidate) => {

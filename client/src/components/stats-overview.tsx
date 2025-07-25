@@ -10,6 +10,7 @@ export default function StatsOverview() {
     qualificationRate: 0
   } } = useQuery({
     queryKey: ['/api/stats'],
+    refetchInterval: 3000, // Poll every 3 seconds for updated stats
     queryFn: async () => {
       const response = await fetch('/api/stats');
       if (!response.ok) throw new Error('Failed to fetch stats');
