@@ -206,10 +206,10 @@ export default function CandidateTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-900">
-                      <div>{candidate.experience || 'Not specified'}</div>
-                      {candidate.cdlType && (
+                      <div>{candidate.hasExperience ? '24+ months' : 'Not specified'}</div>
+                      {(candidate.dataCollection as any)?.cdl_type && (
                         <div className="mt-1">
-                          {getCDLBadge(candidate.cdlType)}
+                          {getCDLBadge((candidate.dataCollection as any)?.cdl_type)}
                         </div>
                       )}
                     </div>
@@ -218,25 +218,49 @@ export default function CandidateTable({
                     {getStatusBadge(candidate.qualified)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <Button
-                      size="sm"
-                      className="bg-success hover:bg-green-700 text-white"
-                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                      disabled={qualifyMutation.isPending}
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      Qualify
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="bg-danger hover:bg-red-700"
-                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                      disabled={qualifyMutation.isPending}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Reject
-                    </Button>
+                    {/* Only show manual override buttons for unprocessed (null) candidates */}
+                    {candidate.qualified === null ? (
+                      <>
+                        <Button
+                          size="sm"
+                          className="bg-success hover:bg-green-700 text-white"
+                          onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                          disabled={qualifyMutation.isPending}
+                        >
+                          <Check className="w-3 h-3 mr-1" />
+                          Qualify
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="bg-danger hover:bg-red-700"
+                          onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                          disabled={qualifyMutation.isPending}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Reject
+                        </Button>
+                      </>
+                    ) : (
+                      /* Show status and optional override for already processed candidates */
+                      <div className="flex items-center space-x-2">
+                        <div className="text-xs text-slate-500">
+                          {candidate.qualified ? 'Auto-qualified by Voice Agent' : 'Auto-rejected by Voice Agent'}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => qualifyMutation.mutate({ 
+                            id: candidate.id, 
+                            qualified: !candidate.qualified 
+                          })}
+                          disabled={qualifyMutation.isPending}
+                          className="text-xs"
+                        >
+                          Override
+                        </Button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))
