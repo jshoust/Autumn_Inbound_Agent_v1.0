@@ -19,6 +19,107 @@ function verifyElevenLabsWebhook(payload: string, signature: string, secret: str
   return `sha256=${expectedSignature}` === signature;
 }
 
+// Extract candidate information from transcript
+function extractCandidateFromTranscript(transcript: Array<{ role: string; message: string }>): {
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  cdl?: boolean;
+  experience?: string;
+  violations?: boolean;
+  work_auth?: boolean;
+} {
+  const fullText = transcript.map(t => `${t.role}: ${t.message}`).join('\n');
+  
+  console.log('=== TRANSCRIPT EXCERPT FOR DEBUGGING ===');
+  console.log(fullText.substring(0, 1000) + '...');
+  console.log('=== END TRANSCRIPT EXCERPT ===');
+  
+  let firstName = '';
+  let lastName = '';
+  let phoneNumber = '';
+  let hasCDL = false;
+  let hasExperience = false;
+  let hasViolations = false;
+  let hasWorkAuth = false;
+  
+  // More flexible name extraction patterns
+  // Look for name patterns after agent asks for name
+  const namePatterns = [
+    /(?:first\s+name|what.*name|your\s+name)[^?]*\?\s*(?:user|caller):\s*([A-Za-z]+)/i,
+    /(?:name\s+is|call\s+me|i'm|my\s+name)\s+([A-Za-z]+)/i,
+    /(?:hello|hi).*?(?:i'm|my\s+name\s+is)\s+([A-Za-z]+)/i
+  ];
+  
+  for (const pattern of namePatterns) {
+    const match = fullText.match(pattern);
+    if (match && !firstName) {
+      firstName = match[1].trim();
+      break;
+    }
+  }
+  
+  // Look for last name patterns
+  const lastNamePatterns = [
+    /(?:last\s+name|surname)[^?]*\?\s*(?:user|caller):\s*([A-Za-z]+)/i,
+    new RegExp(`${firstName}\\s+([A-Za-z]+)`, 'i') // First name followed by last name
+  ];
+  
+  for (const pattern of lastNamePatterns) {
+    const match = fullText.match(pattern);
+    if (match) {
+      lastName = match[1].trim();
+      break;
+    }
+  }
+  
+  // More flexible phone number extraction
+  const phonePatterns = [
+    /(?:phone|number|contact)[^?]*\?\s*(?:user|caller):\s*([\d\-\(\)\s]+)/i,
+    /(?:call.*back|reach.*at|my\s+number)\s*([\d\-\(\)\s]{10,})/i,
+    /((?:\d{3}[-.]?\d{3}[-.]?\d{4})|(?:\(\d{3}\)\s*\d{3}[-.]?\d{4}))/g // Direct phone patterns
+  ];
+  
+  for (const pattern of phonePatterns) {
+    const match = fullText.match(pattern);
+    if (match) {
+      let phone = match[1].replace(/[^\d]/g, ''); // Extract digits only
+      if (phone.length === 10) {
+        phoneNumber = `${phone.slice(0,3)}-${phone.slice(3,6)}-${phone.slice(6)}`;
+        break;
+      }
+    }
+  }
+  
+  // Enhanced CDL detection
+  hasCDL = /(?:yes.*class\s*a|class\s*a.*yes|cdl.*yes|commercial.*license.*yes|valid.*cdl)/i.test(fullText);
+  
+  // Enhanced experience detection  
+  hasExperience = /(?:yes.*(?:two|2|twenty-four|24).*(?:year|month)|(?:year|month).*yes|experience.*yes)/i.test(fullText);
+  
+  // Enhanced violations detection (looking for "No" responses)
+  hasViolations = /(?:violation.*no|no.*violation|clean.*record|no.*ticket)/i.test(fullText);
+  
+  // Enhanced work authorization detection
+  hasWorkAuth = /(?:yes.*(?:eligible|authorized|legal)|(?:eligible|authorized|legal).*yes|work.*yes)/i.test(fullText);
+  
+  const result = {
+    first_name: firstName || undefined,
+    last_name: lastName || undefined, 
+    phone_number: phoneNumber || undefined,
+    cdl: hasCDL,
+    experience: hasExperience ? '24+ months' : undefined,
+    violations: !hasViolations, // Invert since we're checking for clean record
+    work_auth: hasWorkAuth
+  };
+  
+  console.log('=== EXTRACTION RESULTS ===');
+  console.log('Extracted:', result);
+  console.log('=== END EXTRACTION ===');
+  
+  return result;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Webhook endpoint to receive call data from ElevenLabs
   app.post('/api/inbound', async (req, res) => {
@@ -59,21 +160,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (conversation_id && process.env.ELEVENLABS_API_KEY) {
         try {
           conversationData = await elevenLabsService.getConversation(conversation_id);
-          if (conversationData) {
+          if (conversationData && conversationData.transcript) {
             console.log(`Retrieved full conversation with ${conversationData.transcript.length} messages`);
             
-            // Use the fetched transcript and analyze it
+            // Build transcript text from ElevenLabs format
             processedTransript = conversationData.transcript
-              .map(t => `${t.speaker}: ${t.text}`)
+              .map(t => `${t.speaker.toUpperCase()}: ${t.text}`)
               .join('\n');
-              
+            
+            // Extract candidate data from transcript using the ElevenLabs conversation format
+            const candidateInfo = extractCandidateFromTranscript(
+              conversationData.transcript.map(t => ({ role: t.speaker, message: t.text }))
+            );
+            console.log('Extracted candidate info:', candidateInfo);
+            
             // Analyze conversation for qualification data
             const analysis = await elevenLabsService.analyzeConversation(conversationData.transcript);
             processedAnswers = {
               ...answers,
+              ...candidateInfo,
               cdl: analysis.cdl,
               cdl_type: analysis.cdlType,
-              experience: analysis.experience
+              experience: analysis.experience,
+              qualified: analysis.qualified
             };
             
             console.log('Conversation analysis:', analysis);
@@ -86,12 +195,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Extract phone from data collection if available
       const extractedPhone = processedAnswers?.phone_number || processedAnswers?.Phone_number;
-      const finalPhone = phone || caller_number || extractedPhone || 'unknown';
+      const finalPhone = extractedPhone || phone || caller_number || 'unknown';
       const finalCallId = call_id || conversation_id || `conv-${Date.now()}`;
 
       console.log('DEBUGGING CANDIDATE DATA:');
       console.log('finalCallId:', finalCallId);
       console.log('finalPhone:', finalPhone);
+      console.log('processedAnswers:', processedAnswers);
 
       // Basic qualification scoring logic using processed answers
       let qualified = null;
