@@ -243,6 +243,52 @@ export class PostmarkService {
   /**
    * Test email sending capability
    */
+  async sendTestEmail(
+    recipientEmail: string, 
+    subject: string, 
+    message: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.isEnabled) {
+      return { success: false, error: 'Postmark not configured' };
+    }
+
+    try {
+      const response = await this.client.sendEmail({
+        From: process.env.FROM_EMAIL || 'noreply@truckrecruit.pro',
+        To: recipientEmail,
+        Subject: subject,
+        HtmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1e293b;">Test Email from TruckRecruit Pro</h2>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #374151;">${message}</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <p style="color: #6b7280; font-size: 14px;">
+              This is a test email sent from your recruitment system.<br>
+              Sent at: ${new Date().toLocaleString()}
+            </p>
+          </div>
+        `,
+        TextBody: `Test Email from TruckRecruit Pro\n\n${message}\n\nThis is a test email sent from your recruitment system.\nSent at: ${new Date().toLocaleString()}`,
+        MessageStream: 'outbound',
+        TrackOpens: true,
+      });
+
+      console.log(`Test email sent to ${recipientEmail}, MessageID: ${response.MessageID}`);
+      
+      return {
+        success: true,
+        messageId: response.MessageID,
+      };
+    } catch (error) {
+      console.error('Failed to send test email:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     if (!this.isEnabled) {
       return { success: false, error: 'Postmark not configured' };
