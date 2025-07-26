@@ -267,42 +267,7 @@ function StatusBadgeRenderer({ value }: any) {
   }
 }
 
-// Row detail renderer for expanded view
-function DetailCellRenderer(props: any) {
-  const { data } = props;
-  const allResults = data._all;
-  const candidate = data._meta;
-  
-  return (
-    <div className="p-6 bg-gray-50 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4">Candidate Details</h3>
-      <div className="mb-4">
-        <strong>Name:</strong> {data.name} | <strong>Phone:</strong> {data.phone}
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(allResults || {}).map(([key, item]: [string, any]) => (
-          <div key={key} className="p-3 border rounded-lg bg-white">
-            <div className="flex items-center gap-2 mb-2">
-              <StatusIcon value={item.value} />
-              <span className="font-medium text-sm">{key}</span>
-            </div>
-            {item.json_schema?.description && (
-              <p className="text-xs text-gray-600 mb-2">
-                {item.json_schema.description}
-              </p>
-            )}
-            {item.rationale && (
-              <p className="text-xs text-gray-500">
-                <strong>Analysis:</strong> {item.rationale}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+
 
 export default function CandidatesAgGrid({
   candidates,
@@ -381,8 +346,7 @@ export default function CandidatesAgGrid({
       headerName: 'Name', 
       field: 'name', 
       minWidth: 160,
-      checkboxSelection: true,
-      headerCheckboxSelection: true
+      checkboxSelection: true
     },
     { headerName: 'Phone', field: 'phone', minWidth: 140 },
     { headerName: 'Call Time', field: 'callTime', minWidth: 150 },
@@ -495,14 +459,11 @@ export default function CandidatesAgGrid({
             wrapText: true,
             autoHeight: true
           }}
-          rowSelection="multiple"
-          suppressRowClickSelection={true}
+          rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
           onSelectionChanged={handleSelectionChanged}
           rowHeight={60}
           headerHeight={50}
-          masterDetail={true}
-          detailCellRenderer={DetailCellRenderer}
-          detailRowHeight={400}
+
         />
       </div>
     </div>
