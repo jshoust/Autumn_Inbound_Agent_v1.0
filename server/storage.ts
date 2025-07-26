@@ -420,65 +420,52 @@ export class DatabaseStorage implements IStorage {
 
 // Helper function to extract key data from ElevenLabs API response
 function extractKeyData(apiResponse: any) {
+  const dataCollection = apiResponse.analysis?.data_collection_results || {};
   const transcript = apiResponse.transcript || [];
   
-  // Extract data from conversation transcript
-  let firstName = '';
-  let lastName = '';
-  let phoneNumber = '';
-  let hasCDL = false;
-  let hasExperience = false;
+  console.log('=== DATA COLLECTION RESULTS ===');
+  console.log('Available fields:', Object.keys(dataCollection));
+  Object.keys(dataCollection).forEach(key => {
+    const field = dataCollection[key];
+    console.log(`${key}: ${field?.value} (${typeof field?.value})`);
+  });
+  console.log('=== END DATA COLLECTION ===');
   
-  // Parse transcript for key information
-  for (let i = 0; i < transcript.length; i++) {
-    const current = transcript[i];
-    const next = transcript[i + 1];
-    
-    if (current.role === 'agent' && next?.role === 'user') {
-      const agentMessage = current.message?.toLowerCase() || '';
-      const userResponse = next.message?.trim() || '';
-      
-      // Extract first name
-      if (agentMessage.includes('first name') && !firstName) {
-        firstName = userResponse;
-      }
-      
-      // Extract last name  
-      if (agentMessage.includes('last name') && !lastName) {
-        lastName = userResponse;
-      }
-      
-      // Extract phone number
-      if (agentMessage.includes('phone number') && !phoneNumber) {
-        phoneNumber = userResponse;
-      }
-      
-      // Check CDL license
-      if (agentMessage.includes('class a commercial') || agentMessage.includes('cdl')) {
-        hasCDL = userResponse.toLowerCase().includes('yes');
-      }
-      
-      // Check experience
-      if (agentMessage.includes('twenty-four months') || agentMessage.includes('24 months')) {
-        hasExperience = userResponse.toLowerCase().includes('yes') || 
-                       userResponse.toLowerCase().includes('i do');
-        // "I do not" means NO experience
-        if (userResponse.toLowerCase().includes('i do not')) {
-          hasExperience = false;
-        }
-      }
-    }
-  }
+  // Extract structured data from ElevenLabs analysis
+  const firstName = dataCollection.First_Name?.value || '';
+  const lastName = dataCollection.Last_Name?.value || '';
+  const phoneNumber = dataCollection.Phone_number?.value || '';
   
-  // Calculate qualification status
-  const qualified = hasCDL && hasExperience;
+  // Question responses (boolean values)
+  const hasCDL = dataCollection.question_one?.value === true;
+  const hasExperience = dataCollection.Question_two?.value === true;
+  const hasHopperExperience = dataCollection.Question_three?.value === true;
+  const otrAvailable = dataCollection.question_four?.value === true;
+  const hasViolations = dataCollection.question_five?.value === true;
+  const workEligible = dataCollection.question_six?.value === true;
   
-  console.log('=== EXTRACTED FROM TRANSCRIPT ===');
+  // Question response text
+  const cdlResponse = dataCollection.question_one_response?.value || '';
+  const experienceResponse = dataCollection.question_two_response?.value || '';
+  const hopperResponse = dataCollection.question_three_response?.value || '';
+  const otrResponse = dataCollection.Question_four_response?.value || '';
+  const violationsResponse = dataCollection.question_five_reponse?.value || '';
+  const scheduleResponse = dataCollection.schedule?.value || '';
+  
+  // Calculate qualification status - must have CDL AND experience AND no violations AND work eligible
+  const qualified = hasCDL && hasExperience && !hasViolations && (workEligible !== false);
+  
+  console.log('=== EXTRACTED DATA ===');
   console.log('First Name:', firstName);
   console.log('Last Name:', lastName);
   console.log('Phone:', phoneNumber);
-  console.log('Has CDL:', hasCDL);
-  console.log('Has Experience:', hasExperience);
+  console.log('Has CDL:', hasCDL, '("' + cdlResponse + '")');
+  console.log('Has Experience:', hasExperience, '("' + experienceResponse + '")');
+  console.log('Has Hopper Exp:', hasHopperExperience, '("' + hopperResponse + '")');
+  console.log('OTR Available:', otrAvailable, '("' + otrResponse + '")');
+  console.log('Has Violations:', hasViolations, '("' + violationsResponse + '")');
+  console.log('Work Eligible:', workEligible);
+  console.log('Schedule:', scheduleResponse);
   console.log('Qualified:', qualified);
   console.log('=== END EXTRACTION ===');
   
@@ -488,15 +475,24 @@ function extractKeyData(apiResponse: any) {
     phoneNumber,
     cdlA: hasCDL,
     experience24Months: hasExperience,
-    hopperExperience: null,
-    otrAvailable: null,
-    cleanRecord: null,
-    workEligible: null,
-    interviewSchedule: null,
-    callDuration: transcript.length > 0 ? transcript[transcript.length - 1].time_in_call_secs : 0,
+    hopperExperience: hasHopperExperience,
+    otrAvailable: otrAvailable,
+    cleanRecord: !hasViolations,
+    workEligible: workEligible,
+    interviewSchedule: scheduleResponse,
+    callDuration: transcript.length > 0 ? transcript[transcript.length - 1]?.time_in_call_secs || 0 : 0,
     callCost: null,
-    callSuccessful: apiResponse.status === 'done',
-    qualified
+    callSuccessful: apiResponse.analysis?.call_successful === 'success',
+    qualified,
+    // Store response text for detailed view
+    responses: {
+      cdl: cdlResponse,
+      experience: experienceResponse,
+      hopper: hopperResponse,
+      otr: otrResponse,
+      violations: violationsResponse,
+      schedule: scheduleResponse
+    }
   };
 }
 
