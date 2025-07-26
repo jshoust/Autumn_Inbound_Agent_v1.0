@@ -55,6 +55,8 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setEditingUser(null);
+      setIsCreateDialogOpen(false);
+      setFormData({ username: "", password: "", email: "", role: "recruiter", receiveNotifications: true });
       toast({ title: "User updated successfully" });
     },
     onError: (error: any) => {
