@@ -1,0 +1,57 @@
+
+    }
+  ],
+  "status": "OK"
+}
+🗺️ Google Maps API: Travel time 1186 minutes, distance 2139 km
+10:36:03 AM [express] GET /api/claims 304 in 967ms :: [{"id":"f77364b4-7711-4155-b1ab-806031de1eb5","…
+10:36:03 AM [express] GET /api/appointments 200 in 4ms
+10:36:05 AM [express] GET /api/appointments 200 in 5ms
+10:36:10 AM [express] GET /api/appointments 200 in 4ms
+📍 Storing current device location for adjuster c046b4fc-0344-4af6-9865-8b8baf915cab: 44.60843397524479, -77.75350014380673
+✅ Current device location stored for adjuster c046b4fc-0344-4af6-9865-8b8baf915cab
+10:37:04 AM [express] POST /api/user/update-current-location 200 in 396ms :: {"success":true,"message…
+10:37:04 AM [express] POST /api/weather/coordinates 200 in 547ms :: {"location":"Marmora, Ontario","t…
+📍 Storing current device location for adjuster c046b4fc-0344-4af6-9865-8b8baf915cab: 44.6084339752441, -77.75350014380695
+✅ Current device location stored for adjuster c046b4fc-0344-4af6-9865-8b8baf915cab
+10:37:39 AM [express] POST /api/user/update-current-location 200 in 403ms :: {"success":true,"message…
+10:37:39 AM [express] POST /api/weather/coordinates 200 in 636ms :: {"location":"Marmora, Ontario","t…
+❌ Failed to sync calendar events: GraphError: Could not find a property named 'isRecurring' on type 'Microsoft.OutlookServices.Event'.
+    at new GraphError (/home/runner/workspace/node_modules/@microsoft/microsoft-graph-client/src/GraphError.ts:63:3)
+    at Function.GraphErrorHandler.constructErrorFromResponse (/home/runner/workspace/node_modules/@microsoft/microsoft-graph-client/src/GraphErrorHandler.ts:77:18)
+    at Function.<anonymous> (/home/runner/workspace/node_modules/@microsoft/microsoft-graph-client/src/GraphErrorHandler.ts:104:31)
+    at step (/home/runner/workspace/node_modules/tslib/tslib.js:196:27)
+    at Object.next (/home/runner/workspace/node_modules/tslib/tslib.js:177:57)
+    at /home/runner/workspace/node_modules/tslib/tslib.js:170:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (/home/runner/workspace/node_modules/tslib/tslib.js:166:16)
+    at Function.GraphErrorHandler.getError (/home/runner/workspace/node_modules/@microsoft/microsoft-graph-client/src/GraphErrorHandler.ts:101:65)
+    at GraphRequest.<anonymous> (/home/runner/workspace/node_modules/@microsoft/microsoft-graph-client/src/GraphRequest.ts:391:55)
+    at step (/home/runner/workspace/node_modules/tslib/tslib.js:196:27)
+    at Object.throw (/home/runner/workspace/node_modules/tslib/tslib.js:177:57)
+    at rejected (/home/runner/workspace/node_modules/tslib/tslib.js:168:69)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  statusCode: 400,
+  code: 'RequestBroker--ParseUri',
+  requestId: 'c4190364-e25a-42a7-a4c5-554b8e313f6f',
+  date: 2025-07-26T10:37:42.000Z,
+  body: `{"code":"RequestBroker--ParseUri","message":"Could not find a property named 'isRecurring' on type 'Microsoft.OutlookServices.Event'.","innerError":{"date":"2025-07-26T10:37:42","request-id":"c4190364-e25a-42a7-a4c5-554b8e313f6f","client-request-id":"ef09b222-a927-530b-4f72-93b93a699bd4"}}`,
+  headers: Headers {
+    'cache-control': 'private',
+    'transfer-encoding': 'chunked',
+    'content-type': 'application/json',
+    'content-encoding': 'gzip',
+    vary: 'Accept-Encoding',
+    'strict-transport-security': 'max-age=31536000',
+    'request-id': 'c4190364-e25a-42a7-a4c5-554b8e313f6f',
+    'client-request-id': 'ef09b222-a927-530b-4f72-93b93a699bd4',
+    'x-ms-ags-diagnostic': '{"ServerInfo":{"DataCenter":"East US 2","Slice":"E","Ring":"5","ScaleUnit":"004","RoleInstance":"BN1PEPF000045E4"}}',
+    date: 'Sat, 26 Jul 2025 10:37:42 GMT'
+  }
+}
+Error syncing calendar events: Error: Failed to sync calendar events from Office 365
+    at Office365Service.syncCalendarEvents (/home/runner/workspace/server/services/office365Service.ts:241:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:8609:22)
+10:37:42 AM [express] POST /api/office365/sync-calendar 500 in 293ms :: {"message":"Failed to sync ca…
+10:38:03 AM [express] GET /api/notificati

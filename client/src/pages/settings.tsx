@@ -222,7 +222,7 @@ export default function Settings() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users?.map((user: User) => (
+                    {(users || []).map((user: User) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
