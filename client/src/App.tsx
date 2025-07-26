@@ -4,10 +4,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Settings as SettingsIcon, Table2 } from "lucide-react";
+import { LayoutDashboard, Settings as SettingsIcon } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Settings from "@/pages/settings";
-import CallRecordsTable from "@/components/call-records-table";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,16 +27,6 @@ function Router() {
                     className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
                   >
                     <LayoutDashboard className="h-4 w-4" />
-                    <span className="hidden sm:inline">Dashboard</span>
-                  </Button>
-                </Link>
-                <Link href="/screener">
-                  <Button 
-                    variant={location === "/screener" ? "default" : "ghost"} 
-                    size="sm"
-                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
-                  >
-                    <Table2 className="h-4 w-4" />
                     <span className="hidden sm:inline">Call Records</span>
                   </Button>
                 </Link>
@@ -60,7 +49,6 @@ function Router() {
       <main className="container mx-auto px-4 py-4 sm:py-6">
         <Switch>
           <Route path="/" component={Dashboard} />
-          <Route path="/screener" component={CallRecordsTable} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
