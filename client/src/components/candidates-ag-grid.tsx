@@ -390,9 +390,11 @@ export default function CandidatesAgGrid({
     return [];
   }, [candidateList]);
 
-  // Build rows: one per candidate
+  // Build rows: one per candidate with expansion rows
   const rowData = useMemo(() => {
-    return candidateList.map((cand, idx) => {
+    const rows: any[] = [];
+    
+    candidateList.forEach((cand, idx) => {
       const results = cand?.rawConversationData?.analysis?.data_collection_results || {};
       const getField = (field: string) => {
         const entry = results[field];
@@ -404,18 +406,43 @@ export default function CandidatesAgGrid({
         questionMeta.map(q => [q.label, getField(q.key)])
       );
       
-      return {
+      // Main row
+      const mainRow = {
         id: idx,
         name: `${cand.firstName || ''} ${cand.lastName || ''}`.trim() || 'Unknown',
         phone: cand.phone || getField('Phone_number'),
         callTime: new Date(cand.createdAt).toLocaleString(),
         qualified: cand.qualified,
         ...questionColumns,
-        _all: results, // For expansion panel
-        _meta: cand // Original candidate data
+        _all: results,
+        _meta: cand,
+        _isExpanded: false,
+        _rowType: 'main'
       };
+      
+      rows.push(mainRow);
+      
+      // Add expansion row if this row is expanded
+      if (expandedRows.has(idx)) {
+        const expandedRow = {
+          id: `${idx}_expanded`,
+          name: '',
+          phone: '',
+          callTime: '',
+          qualified: null,
+          ...Object.fromEntries(questionMeta.map(q => [q.label, ''])),
+          _all: results,
+          _meta: cand,
+          _isExpanded: true,
+          _rowType: 'expanded',
+          _parentId: idx
+        };
+        rows.push(expandedRow);
+      }
     });
-  }, [candidateList, questionMeta]);
+    
+    return rows;
+  }, [candidateList, questionMeta, expandedRows]);
 
   const toggleRowExpansion = (rowId: number) => {
     setExpandedRows(prev => {
@@ -429,22 +456,58 @@ export default function CandidatesAgGrid({
     });
   };
 
+  // Custom cell renderer for expandable content
+  const CellRenderer = (params: any) => {
+    const { data, colDef } = params;
+    
+    if (data._rowType === 'expanded') {
+      // This is an expanded row - show full width content
+      if (colDef.field === 'expand') {
+        return null;
+      }
+      if (colDef.field === 'name') {
+        return <DetailCellRenderer data={data} onViewTranscript={onViewTranscript} qualifyMutation={qualifyMutation} />;
+      }
+      return null;
+    }
+    
+    // Regular row rendering
+    if (colDef.field === 'expand') {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 h-auto"
+          onClick={() => toggleRowExpansion(data.id)}
+        >
+          <ChevronDown className={`w-3 h-3 transition-transform ${expandedRows.has(data.id) ? 'rotate-180' : ''}`} />
+        </Button>
+      );
+    }
+    
+    if (colDef.field === 'callTime' && data._meta) {
+      const date = new Date(data._meta.createdAt);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    if (questionMeta.some(q => q.label === colDef.field)) {
+      return <StatusIcon value={params.value} />;
+    }
+    
+    if (colDef.field === 'qualified') {
+      return <StatusBadgeRenderer value={params.value} />;
+    }
+    
+    return params.value;
+  };
+
   // Build AG Grid columns
   const columnDefs = useMemo(() => [
     { 
       headerName: '', 
       field: 'expand',
       width: 40,
-      cellRenderer: (params: any) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="p-1 h-auto"
-          onClick={() => toggleRowExpansion(params.data.id)}
-        >
-          <ChevronDown className={`w-3 h-3 transition-transform ${expandedRows.has(params.data.id) ? 'rotate-180' : ''}`} />
-        </Button>
-      ),
+      cellRenderer: CellRenderer,
       sortable: false,
       filter: false,
       resizable: false
@@ -453,23 +516,22 @@ export default function CandidatesAgGrid({
       headerName: 'Name', 
       field: 'name', 
       width: 120,
-      minWidth: 100
+      minWidth: 100,
+      cellRenderer: CellRenderer
     },
     { 
       headerName: 'Phone', 
       field: 'phone', 
       width: 120,
-      minWidth: 110
+      minWidth: 110,
+      cellRenderer: CellRenderer
     },
     { 
       headerName: 'Call Time', 
       field: 'callTime', 
       width: 130,
       minWidth: 120,
-      cellRenderer: (params: any) => {
-        const date = new Date(params.data._meta.createdAt);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
+      cellRenderer: CellRenderer
     },
     ...questionMeta.map(q => ({
       headerName: q.label,
@@ -477,7 +539,7 @@ export default function CandidatesAgGrid({
       width: 70,
       minWidth: 60,
       maxWidth: 80,
-      cellRenderer: (p: any) => <StatusIcon value={p.value} />,
+      cellRenderer: CellRenderer,
       cellStyle: { textAlign: 'center' }
     })),
     {
@@ -485,7 +547,7 @@ export default function CandidatesAgGrid({
       field: 'qualified',
       width: 100,
       minWidth: 90,
-      cellRenderer: StatusBadgeRenderer
+      cellRenderer: CellRenderer
     }
   ], [questionMeta, expandedRows]);
 
@@ -568,29 +630,30 @@ export default function CandidatesAgGrid({
             autoHeight: false,
             flex: 0
           }}
-          rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
+          rowSelection={{ 
+            mode: "multiRow", 
+            checkboxes: true, 
+            enableClickSelection: false, 
+            headerCheckbox: true
+          }}
+          isRowSelectable={(params) => params.data._rowType !== 'expanded'}
           onSelectionChanged={handleSelectionChanged}
-          rowHeight={45}
+          getRowHeight={(params) => {
+            return params.data._rowType === 'expanded' ? 200 : 45;
+          }}
           headerHeight={40}
           suppressHorizontalScroll={false}
+          getRowStyle={(params) => {
+            if (params.data._rowType === 'expanded') {
+              return { backgroundColor: '#f8fafc', border: 'none' };
+            }
+            return {};
+          }}
           onFirstDataRendered={() => {
             gridRef.current?.api.sizeColumnsToFit();
           }}
         />
       </div>
-      
-      {/* Expanded Row Details */}
-      {rowData.map((row) => (
-        expandedRows.has(row.id) && (
-          <div key={`expanded-${row.id}`} className="border-l-4 border-blue-200 mt-2">
-            <DetailCellRenderer 
-              data={row} 
-              onViewTranscript={onViewTranscript}
-              qualifyMutation={qualifyMutation}
-            />
-          </div>
-        )
-      ))}
     </div>
   );
 }
