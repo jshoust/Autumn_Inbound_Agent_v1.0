@@ -145,6 +145,9 @@ function extractCandidateFromTranscript(transcript: Array<{ role: string; messag
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Target agent ID for filtering inbound calls
+  const TARGET_AGENT_ID = process.env.TARGET_AGENT_ID || 'agent_01k076swcgekzt88m03gegfgsr';
+  
   // Webhook endpoint to receive call data from ElevenLabs
   app.post('/api/inbound', async (req, res) => {
     try {
@@ -183,133 +186,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid webhook format - missing data object' });
       }
       
-      const {
-        conversation_id,
-        agent_id,
-        data_collection,
-        transcript_summary,
-        conversation_initiation_client_data
-      } = data;
+      const { conversation_id, agent_id } = data;
       
-      console.log('=== WEBHOOK DATA EXTRACTION ===');
-      console.log('conversation_id:', conversation_id);
-      console.log('agent_id:', agent_id);
-      console.log('data_collection:', JSON.stringify(data_collection, null, 2));
-      console.log('transcript_summary:', transcript_summary);
-      console.log('=== END WEBHOOK DATA ===');
-      
-      // Extract qualification data from data_collection
-      let qualified = null;
-      let firstName = null;
-      let lastName = null;
-      let phone = 'unknown';
-      let hasCdlA = null;
-      let hasExperience = null;
-      let hasViolations = null;
-      let hasWorkAuth = null;
-      
-      if (data_collection) {
-        // Extract CDL information
-        if (data_collection.CDL) {
-          hasCdlA = data_collection.CDL.value === true;
-        }
-        
-        // Extract experience information
-        if (data_collection.Experience) {
-          const expValue = data_collection.Experience.value;
-          if (typeof expValue === 'string') {
-            // Parse experience strings like "24+ months", "2 years", etc.
-            const numMatch = expValue.match(/(\d+)/);
-            if (numMatch) {
-              const num = parseInt(numMatch[1]);
-              hasExperience = num >= 24 || expValue.toLowerCase().includes('year');
-            }
-          } else if (typeof expValue === 'boolean') {
-            hasExperience = expValue;
-          }
-        }
-        
-        // Extract violations information
-        if (data_collection.Violations) {
-          hasViolations = data_collection.Violations.value === true;
-        }
-        
-        // Extract phone number
-        if (data_collection.Phone_number) {
-          const phoneValue = data_collection.Phone_number.value;
-          if (phoneValue && phoneValue !== 'qualified-candidate') {
-            phone = phoneValue;
-          }
-        }
-        
-        // Calculate qualification status
-        if (hasCdlA !== null && hasExperience !== null) {
-          qualified = hasCdlA && hasExperience && !hasViolations;
-        }
+      // STEP 1: Filter by Agent ID
+      if (agent_id !== TARGET_AGENT_ID) {
+        console.log(`Ignoring webhook - different agent: ${agent_id} (expected: ${TARGET_AGENT_ID})`);
+        return res.status(200).json({ 
+          status: 'ignored', 
+          reason: `Different agent: ${agent_id}`,
+          expected: TARGET_AGENT_ID
+        });
       }
       
-      const finalCallId = conversation_id || `conv-${Date.now()}`;
-      const callDurationSecs = conversation_initiation_client_data?.dynamic_variables?.system__call_duration_secs || null;
-
-      console.log('=== PROCESSED QUALIFICATION DATA ===');
-      console.log('qualified:', qualified);
-      console.log('hasCdlA:', hasCdlA);
-      console.log('hasExperience:', hasExperience);
-      console.log('hasViolations:', hasViolations);
-      console.log('phone:', phone);
-      console.log('=== END PROCESSED DATA ===');
-
-      // Ensure required fields are not null
-      if (!phone) {
-        console.error('Missing required phone number');
-        return res.status(400).json({ error: 'Phone number is required' });
-      }
-
-      if (!finalCallId) {
-        console.error('Missing required conversation ID');
-        return res.status(400).json({ error: 'Conversation ID is required' });
-      }
-
-      const candidateData = {
-        conversationId: finalCallId,  // This maps to conversation_id in DB 
-        callId: finalCallId,          // This maps to call_id in DB
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
-        hasCdlA: hasCdlA,
-        hasExperience: hasExperience,
-        hasViolations: hasViolations,
-        hasWorkAuth: hasWorkAuth,
+      console.log(`Processing webhook for target agent: ${agent_id}`);
+      console.log(`Conversation ID: ${conversation_id}`);
+      
+      // STEP 2: Trigger API call to get full conversation details
+      console.log('Fetching full conversation details from ElevenLabs API...');
+      const fullConversationData = await elevenLabsService.getConversationDetails(conversation_id);
+      
+      // STEP 3: Store in new call records table with JSONB
+      const callRecord = await storage.storeCallRecord({
+        conversationId: conversation_id,
         agentId: agent_id,
-        callDurationSecs: callDurationSecs,
-        transcript: transcript_summary || null,
-        dataCollection: data_collection || null,
-        qualified: qualified,
-        rawConversationData: webhookData || null
-      };
-
-      console.log('Final candidateData:', JSON.stringify(candidateData, null, 2));
-
-      const candidate = await storage.createCandidate(candidateData);
+        status: fullConversationData.status || 'completed',
+        rawData: fullConversationData
+      });
       
-      // Send recruiter notification for qualified candidates
-      if (qualified === true) {
+      console.log('=== CALL RECORD STORED ===');
+      console.log('Call Record ID:', callRecord.id);
+      console.log('Extracted Data:', JSON.stringify(callRecord.extractedData, null, 2));
+      console.log('=== END STORAGE ===');
+      
+      // Send email notification for qualified candidates
+      const extractedData = callRecord.extractedData as any;
+      if (extractedData?.qualified === true) {
         try {
-          await emailService.sendRecruiterNotification(candidate);
+          // Create a legacy candidate record for email notification
+          const legacyCandidate = {
+            firstName: extractedData.firstName,
+            lastName: extractedData.lastName,
+            phone: extractedData.phoneNumber,
+            qualified: extractedData.qualified
+          };
+          await emailService.sendRecruiterNotification(legacyCandidate);
+          console.log('Recruiter notification sent successfully');
         } catch (error) {
           console.error('Failed to send recruiter notification:', error);
           // Don't fail the whole request if email fails
         }
       }
       
-      res.status(200).json({ status: 'ok', candidate });
+      res.status(200).json({ 
+        status: 'processed', 
+        callRecord: {
+          id: callRecord.id,
+          conversationId: callRecord.conversationId,
+          agentId: callRecord.agentId,
+          extractedData: callRecord.extractedData
+        }
+      });
     } catch (error) {
       console.error('Error processing inbound call:', error);
       res.status(500).json({ error: 'Failed to process call data' });
     }
   });
 
-  // Get candidates with optional search and filter
+  // Get candidates with optional search and filter (legacy)
   app.get('/api/candidates', async (req, res) => {
     try {
       const { search, status } = req.query;
@@ -321,6 +264,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching candidates:', error);
       res.status(500).json({ error: 'Failed to fetch candidates' });
+    }
+  });
+
+  // Get call records (new JSONB-based storage)
+  app.get('/api/call-records', async (req, res) => {
+    try {
+      const { agent_id, limit } = req.query;
+      const agentId = agent_id as string || TARGET_AGENT_ID;
+      const limitNum = limit ? parseInt(limit as string) : 50;
+      
+      const callRecords = await storage.getCallRecords(agentId, limitNum);
+      res.json(callRecords);
+    } catch (error) {
+      console.error('Error fetching call records:', error);
+      res.status(500).json({ error: 'Failed to fetch call records' });
+    }
+  });
+
+  // Get specific call record details
+  app.get('/api/call-records/:conversationId', async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const callRecord = await storage.getCallRecordByConversationId(conversationId);
+      
+      if (!callRecord) {
+        return res.status(404).json({ error: 'Call record not found' });
+      }
+      
+      res.json(callRecord);
+    } catch (error) {
+      console.error('Error fetching call record:', error);
+      res.status(500).json({ error: 'Failed to fetch call record' });
     }
   });
 

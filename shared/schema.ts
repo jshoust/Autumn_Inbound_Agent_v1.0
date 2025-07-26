@@ -2,6 +2,30 @@ import { pgTable, text, serial, boolean, timestamp, jsonb, integer } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// New simplified table for call records with JSONB storage
+export const callRecords = pgTable("call_records", {
+  id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").unique().notNull(),
+  agentId: text("agent_id").notNull(),
+  status: text("status").notNull(), // done, failed, etc.
+  
+  // Store everything in JSONB for flexibility
+  rawData: jsonb("raw_data").notNull(), // Complete ElevenLabs API response
+  extractedData: jsonb("extracted_data"), // Processed/extracted key fields
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCallRecordSchema = createInsertSchema(callRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCallRecord = z.infer<typeof insertCallRecordSchema>;
+export type CallRecord = typeof callRecords.$inferSelect;
+
 export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   conversationId: text("conversation_id").unique().notNull(),

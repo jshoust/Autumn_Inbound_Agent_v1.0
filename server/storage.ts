@@ -1,4 +1,4 @@
-import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser, type UpdateUser } from "@shared/schema";
+import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser, type UpdateUser, callRecords, type CallRecord, type InsertCallRecord } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, like, or, and, isNull } from "drizzle-orm";
 
@@ -23,6 +23,17 @@ export interface IStorage {
     pending: number;
     qualificationRate: number;
   }>;
+  
+  // Call Record methods (new JSONB-based storage)
+  storeCallRecord(callData: {
+    conversationId: string;
+    agentId: string; 
+    status: string;
+    rawData: any;
+    extractedData?: any;
+  }): Promise<CallRecord>;
+  getCallRecords(agentId?: string, limit?: number): Promise<CallRecord[]>;
+  getCallRecordByConversationId(conversationId: string): Promise<CallRecord | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +268,106 @@ export class DatabaseStorage implements IStorage {
       qualificationRate
     };
   }
+
+  // Call Record methods (new JSONB-based storage)
+  async storeCallRecord(callData: {
+    conversationId: string;
+    agentId: string; 
+    status: string;
+    rawData: any;
+    extractedData?: any;
+  }): Promise<CallRecord> {
+    
+    const extractedData = callData.extractedData || extractKeyData(callData.rawData);
+    
+    const insertData: InsertCallRecord = {
+      conversationId: callData.conversationId,
+      agentId: callData.agentId,
+      status: callData.status,
+      rawData: callData.rawData,
+      extractedData: extractedData
+    };
+
+    console.log('Storing call record:', JSON.stringify({
+      conversationId: callData.conversationId,
+      agentId: callData.agentId,
+      extractedName: `${extractedData.firstName} ${extractedData.lastName}`,
+      qualified: extractedData.qualified
+    }, null, 2));
+
+    // Check if record already exists
+    const existing = await this.getCallRecordByConversationId(callData.conversationId);
+    if (existing) {
+      // Update existing record
+      const [updated] = await db
+        .update(callRecords)
+        .set({
+          ...insertData,
+          updatedAt: new Date(),
+        })
+        .where(eq(callRecords.conversationId, callData.conversationId))
+        .returning();
+      return updated;
+    } else {
+      // Create new record
+      const [callRecord] = await db
+        .insert(callRecords)
+        .values(insertData)
+        .returning();
+      return callRecord;
+    }
+  }
+
+  async getCallRecords(agentId?: string, limit: number = 50): Promise<CallRecord[]> {
+    let query = db.select().from(callRecords);
+    
+    if (agentId) {
+      query = query.where(eq(callRecords.agentId, agentId));
+    }
+    
+    return await query.orderBy(desc(callRecords.createdAt)).limit(limit);
+  }
+
+  async getCallRecordByConversationId(conversationId: string): Promise<CallRecord | undefined> {
+    const [callRecord] = await db.select().from(callRecords).where(eq(callRecords.conversationId, conversationId));
+    return callRecord || undefined;
+  }
+}
+
+// Helper function to extract key data from ElevenLabs API response
+function extractKeyData(apiResponse: any) {
+  const dataCollection = apiResponse.analysis?.data_collection_results || {};
+  const metadata = apiResponse.metadata || {};
+  
+  return {
+    // Contact Info
+    firstName: dataCollection.First_Name?.value,
+    lastName: dataCollection.Last_Name?.value,
+    phoneNumber: dataCollection.Phone_number?.value,
+    
+    // Qualifications
+    cdlA: dataCollection.question_one?.value,
+    experience24Months: dataCollection.Question_two?.value,
+    hopperExperience: dataCollection.Question_three?.value,
+    otrAvailable: dataCollection.question_four?.value,
+    cleanRecord: dataCollection.question_five?.value,
+    workEligible: dataCollection.question_six?.value,
+    
+    // Scheduling
+    interviewSchedule: dataCollection.schedule?.value,
+    
+    // Call Metrics
+    callDuration: metadata.call_duration_secs,
+    callCost: metadata.cost,
+    callSuccessful: apiResponse.analysis?.call_successful === 'success',
+    
+    // Qualification Status
+    qualified: apiResponse.analysis?.call_successful === 'success' && 
+               dataCollection.question_one?.value === true &&
+               dataCollection.Question_two?.value === true &&
+               dataCollection.question_five?.value === true &&
+               dataCollection.question_six?.value === true
+  };
 }
 
 export const storage = new DatabaseStorage();
