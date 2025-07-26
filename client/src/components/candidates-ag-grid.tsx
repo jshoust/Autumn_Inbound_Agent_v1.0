@@ -35,14 +35,39 @@ function StatusIcon({ value }: { value: any }) {
 // Extract question order and metadata from one candidate
 function getQuestionsMeta(candidate: any) {
   const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
-  // Filter for keys that are booleans (i.e. pass/fail questions)
-  const boolQuestions = Object.values(results)
-    .filter((item: any) => typeof item.value === 'boolean' || item.value === 'true' || item.value === 'false')
-    .map((item: any, idx: number) => ({
-      key: item.data_collection_id,
+  
+  // Filter for question keys that contain boolean values or null (indicating questions not yet answered)
+  const questionKeys = Object.keys(results).filter(key => {
+    const item = results[key];
+    return item?.json_schema?.type === 'boolean' && 
+           (key.startsWith('question') || key.startsWith('Question'));
+  });
+  
+  // Sort question keys to ensure consistent order (question_one, Question_two, etc.)
+  const sortedKeys = questionKeys.sort((a, b) => {
+    const aNum = a.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
+    const bNum = b.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
+    
+    // Convert word numbers to numeric for proper sorting
+    const numberMap: Record<string, number> = {
+      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+    };
+    
+    const aOrder = numberMap[aNum || ''] || parseInt(aNum || '0') || 999;
+    const bOrder = numberMap[bNum || ''] || parseInt(bNum || '0') || 999;
+    
+    return aOrder - bOrder;
+  });
+  
+  const boolQuestions = sortedKeys.map((key, idx) => {
+    const item = results[key];
+    return {
+      key: key,
       label: `Q${idx + 1}`,
-      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || item.data_collection_id
-    }));
+      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key
+    };
+  });
+  
   return boolQuestions;
 }
 
@@ -218,15 +243,18 @@ export default function CandidatesAgGrid({
         return entry ? entry.value : null;
       };
       
+      // Create question columns dynamically
+      const questionColumns = Object.fromEntries(
+        questionMeta.map(q => [q.label, getField(q.key)])
+      );
+      
       return {
         id: idx,
         name: `${cand.firstName || ''} ${cand.lastName || ''}`.trim() || 'Unknown',
         phone: cand.phone || getField('Phone_number'),
         callTime: new Date(cand.createdAt).toLocaleString(),
         qualified: cand.qualified,
-        ...Object.fromEntries(
-          questionMeta.map(q => [q.label, getField(q.key)])
-        ),
+        ...questionColumns,
         _all: results, // For expansion panel
         _meta: cand // Original candidate data
       };
