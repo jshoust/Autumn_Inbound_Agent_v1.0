@@ -190,8 +190,12 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
   const allData = data._all;
   
+  console.log('DetailCellRenderer - candidate:', candidate);
+  console.log('DetailCellRenderer - allData:', allData);
+  console.log('DetailCellRenderer - data keys:', allData ? Object.keys(allData) : 'no data');
+  
   // Define proper question mapping with descriptions
-  const questionMapping = {
+  const questionMapping: Record<string, { question: string; type: string }> = {
     'First_Name': { question: 'What is your first name?', type: 'text' },
     'Last_Name': { question: 'What is your last name?', type: 'text' },
     'Phone_number': { question: 'What is your phone number?', type: 'text' },
@@ -211,55 +215,42 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
 
   // Extract and format the questions and responses
   const getFormattedResponses = () => {
-    if (!allData || Object.keys(allData).length === 0) return [];
+    if (!allData || Object.keys(allData).length === 0) {
+      console.log('No allData available for expansion');
+      return [];
+    }
     
-    const responses = [];
+    console.log('Processing allData keys:', Object.keys(allData));
+    const responses: Array<{ question: string; answer: any; type: string }> = [];
     
-    // Group questions and responses logically
-    const questionGroups = [
-      ['First_Name', 'Last_Name', 'Phone_number'],
-      ['question_one', 'question_one_response'],
-      ['Question_two', 'question_two_response'],
-      ['Question_three', 'question_three_response'],
-      ['question_four', 'Question_four_response'],
-      ['question_five', 'question_five_reponse'],
-      ['question_six'],
-      ['schedule']
-    ];
-
-    questionGroups.forEach((group, groupIndex) => {
-      const groupResponses = [];
+    // First, show all available data for debugging
+    Object.entries(allData).forEach(([key, value]: [string, any]) => {
+      console.log(`Data key: ${key}, value:`, value);
       
-      group.forEach(key => {
-        const dataItem = allData[key];
-        const mapping = questionMapping[key];
+      if (value && typeof value === 'object' && value.value !== null && value.value !== undefined && value.value !== '') {
+        let displayValue = value.value;
+        let questionText = questionMapping[key]?.question || key.replace(/_/g, ' ');
+        let type = questionMapping[key]?.type || 'text';
         
-        if (dataItem && mapping && (dataItem.value !== null && dataItem.value !== undefined && dataItem.value !== '')) {
-          let displayValue = dataItem.value;
-          
-          // Format boolean responses
-          if (mapping.type === 'boolean') {
-            displayValue = dataItem.value === true ? '✅ Yes' : dataItem.value === false ? '❌ No' : displayValue;
-          }
-          
-          // Truncate long text responses
-          if (typeof displayValue === 'string' && displayValue.length > 100) {
-            displayValue = displayValue.substring(0, 100) + '...';
-          }
-          
-          groupResponses.push({
-            question: mapping.question,
-            answer: displayValue,
-            type: mapping.type
-          });
+        // Format boolean responses
+        if (type === 'boolean') {
+          displayValue = value.value === true ? '✅ Yes' : value.value === false ? '❌ No' : displayValue;
         }
-      });
-      
-      if (groupResponses.length > 0) {
-        responses.push(...groupResponses);
+        
+        // Truncate long text responses
+        if (typeof displayValue === 'string' && displayValue.length > 100) {
+          displayValue = displayValue.substring(0, 100) + '...';
+        }
+        
+        responses.push({
+          question: questionText,
+          answer: displayValue,
+          type: type
+        });
       }
     });
 
+    console.log('Formatted responses:', responses);
     return responses;
   };
 
