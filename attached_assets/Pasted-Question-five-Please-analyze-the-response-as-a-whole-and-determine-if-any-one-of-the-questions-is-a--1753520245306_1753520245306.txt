@@ -1,0 +1,48 @@
+Question_five
+Please analyze the response as a whole and determine if any one of the questions is a yes, and if so, then set the answer to FALSE: "Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?"
+
+Response: ""
+
+Analysis: The question "Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?" was not asked in the conversation. Therefore, I cannot determine if the answer to the question is yes or no.
+
+Question_four
+Pleae analyze the call to get a true or false to the following question: ""Are you able to be over the road for 3 weeks at a time?"
+
+Analysis: The question "Are you able to be over the road for 3 weeks at a time?" was not asked in the conversation. Therefore, I cannot answer the question.
+
+Question_four
+Please analyze the call to get the full response to the following question: "Are you able to be over the road for 3 weeks at a time?"
+
+Analysis: The question "Are you able to be over the road for 3 weeks at a time?" was not asked in the conversation. Therefore, I cannot provide an answer.
+
+Question_one
+Please analyze the call to get a TRUE or FALSE to the following question. If they answer yes or similar to the question, then the boolean is set to TRUE. "Do you currently have a valid Class A commercial driver’s license?”
+
+Response: "Yes. Yes"
+
+Analysis: The user was asked "Do you currently have a valid Class A commercial driver’s license?" and the user responded with "Yes. Yes". Therefore, the answer to the question is TRUE.
+
+Question_six
+Please analyze the call to get a TRUE or FALSE to the following question: “And finally, are you legally eligible to work in the United States?”
+
+Analysis: The question "And finally, are you legally eligible to work in the United States?" was not asked in the conversation. Therefore, I cannot determine the answer and will return null.
+
+Question_three
+Please analyze the call to get a true or false to the following question: "Regarding your driving experience, do you have verifiable experience with hoppers?"
+
+Analysis: The question is: "Regarding your driving experience, do you have verifiable experience with hoppers?" The transcript does not contain any information about the user's experience with hoppers. Therefore, I cannot answer the question.
+
+Question_three
+Please analyze the call to get the full response to the question: "Do you have verifiable experience with hoppers?"
+
+Analysis: The question "Do you have verifiable experience with hoppers?" was not asked in the conversation. Therefore, it is not possible to extract the answer.
+
+Question_two
+Please analyze the call to get a TRUE or FALSE to the following question. "Do you have at least 24 months of experience driving a tractor-trailer?”
+
+Analysis: The user was asked 'do you have at least twenty-four months of experience driving a tractor-trailer?' and the user responded with 'I do not'. Therefore, the answer to the question is FALSE.
+
+Question_two
+Please analyze the call to extract the actual response to: "do you have at least 24 months of experience driving a tractor-trailer?”
+
+Analysis: The user's response to the question "do you have at least 24 months of experience driving a tractor-trailer?" is "I do not".

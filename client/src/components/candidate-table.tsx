@@ -152,202 +152,179 @@ export default function CandidateTable({
         </div>
       </div>
       
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Contact Information</th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>CDL</span>
-                  <span className="text-xs font-normal text-slate-500">Class A License</span>
+      <div className="space-y-4">
+        {candidates.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            No candidates found. Waiting for incoming calls...
+          </div>
+        ) : (
+          candidates.map((candidate) => {
+            // Extract data collection results from stored API data
+            const rawData = candidate.rawConversationData as any;
+            const dataCollection = rawData?.analysis?.data_collection_results || {};
+            
+            return (
+              <div key={candidate.id} className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                {/* Contact Information */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      {candidate.firstName} {candidate.lastName}
+                    </h3>
+                    <p className="text-slate-600">{candidate.phone}</p>
+                    <p className="text-sm text-slate-500">{formatCallTime(candidate.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {getStatusBadge(candidate.qualified)}
+                    {candidate.transcript && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewTranscript(candidate)}
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        View Details
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>Experience</span>
-                  <span className="text-xs font-normal text-slate-500">24+ Months</span>
-                </div>
-              </th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>Hopper</span>
-                  <span className="text-xs font-normal text-slate-500">Experience</span>
-                </div>
-              </th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>OTR</span>
-                  <span className="text-xs font-normal text-slate-500">Available</span>
-                </div>
-              </th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>Clean Record</span>
-                  <span className="text-xs font-normal text-slate-500">No Violations</span>
-                </div>
-              </th>
-              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
-                <div className="flex flex-col items-center">
-                  <span>Work Auth</span>
-                  <span className="text-xs font-normal text-slate-500">Eligible</span>
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Qualification</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
-            {candidates.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
-                  No candidates found. Waiting for incoming calls...
-                </td>
-              </tr>
-            ) : (
-              candidates.map((candidate) => {
-                // Extract data collection results from stored API data
-                const rawData = candidate.rawConversationData as any;
-                const dataCollection = rawData?.analysis?.data_collection_results || {};
-                
-                // Define questions in correct order with proper field mapping
-                const questions = [
-                  { key: 'cdl', field: 'question_one', responseField: 'question_one_response' },
-                  { key: 'experience', field: 'Question_two', responseField: 'question_two_response' },
-                  { key: 'hopper', field: 'Question_three', responseField: 'question_three_response' },
-                  { key: 'otr', field: 'question_four', responseField: 'Question_four_response' },
-                  { key: 'violations', field: 'question_five', responseField: 'question_five_reponse' },
-                  { key: 'workAuth', field: 'question_six', responseField: 'question_six_response' }
-                ];
-                
-                const getQuestionData = (questionConfig: typeof questions[0]) => {
-                  const value = dataCollection[questionConfig.field]?.value;
-                  const response = dataCollection[questionConfig.responseField]?.value || '';
-                  return { value, response };
-                };
-                
-                return (
-                  <tr key={candidate.id} className="hover:bg-slate-50/50 transition-all duration-200 border-b border-slate-100">
-                    {/* Contact Information */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                            <User className="text-white w-6 h-6" />
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-slate-900 truncate">
-                            {candidate.firstName} {candidate.lastName}
-                          </div>
-                          <div className="text-sm text-slate-600 font-mono">{candidate.phone}</div>
-                          <div className="text-xs text-slate-500">
-                            {formatCallTime(candidate.createdAt)}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Dynamic Question Columns */}
-                    {questions.map((q, index) => {
-                      const { value, response } = getQuestionData(q);
-                      const isViolationsQuestion = q.key === 'violations';
-                      
-                      // For violations question, reverse the logic (true = bad, false = good)
-                      const showCheck = isViolationsQuestion ? value === false : value === true;
-                      const showX = isViolationsQuestion ? value === true : value === false;
-                      
-                      return (
-                        <td key={q.key} className="px-4 py-5 text-center">
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-slate-200">
-                              {showCheck ? (
-                                <Check className="w-5 h-5 text-green-600" />
-                              ) : showX ? (
-                                <X className="w-5 h-5 text-red-600" />
-                              ) : (
-                                <Clock className="w-4 h-4 text-slate-400" />
-                              )}
-                            </div>
-                            {response && (
-                              <div className="max-w-24 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border truncate" 
-                                   title={`"${response}"`}>
-                                "{response}"
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                    
-                    {/* Qualification Status */}
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col space-y-2">
-                        <div>{getStatusBadge(candidate.qualified)}</div>
-                        {candidate.transcript && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors justify-start p-1 h-auto"
-                            onClick={() => onViewTranscript(candidate)}
-                          >
-                            <FileText className="w-3 h-3 mr-1" />
-                            View Details
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                    
-                    {/* Actions */}
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col space-y-2">
-                        {candidate.qualified === null ? (
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                              disabled={qualifyMutation.isPending}
-                            >
-                              <Check className="w-3 h-3 mr-1" />
-                              Qualify
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                              disabled={qualifyMutation.isPending}
-                            >
-                              <X className="w-3 h-3 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
+
+                {/* Question Responses */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-900">Question Responses:</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Q1: CDL */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q1: CDL License</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.question_one?.value === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.question_one?.value === false ? (
+                          <X className="w-4 h-4 text-red-600" />
                         ) : (
-                          <div className="flex flex-col space-y-1">
-                            <div className="text-xs text-slate-500">
-                              {candidate.qualified ? 'Auto-qualified' : 'Auto-rejected'}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => qualifyMutation.mutate({ 
-                                id: candidate.id, 
-                                qualified: !candidate.qualified 
-                              })}
-                              disabled={qualifyMutation.isPending}
-                              className="text-xs"
-                            >
-                              Override
-                            </Button>
-                          </div>
+                          <Clock className="w-4 h-4 text-gray-400" />
                         )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.question_one_response?.value ? `"${dataCollection.question_one_response.value}"` : '-'}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </div>
+
+                    {/* Q2: Experience */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q2: 24+ Months Experience</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.Question_two?.value === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.Question_two?.value === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.question_two_response?.value ? `"${dataCollection.question_two_response.value}"` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Q3: Hopper */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q3: Hopper Experience</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.Question_three?.value === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.Question_three?.value === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.question_three_response?.value ? `"${dataCollection.question_three_response.value}"` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Q4: OTR */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q4: OTR Available</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.question_four?.value === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.question_four?.value === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.Question_four_response?.value ? `"${dataCollection.Question_four_response.value}"` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Q5: Violations */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q5: Clean Record</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.question_five?.value === false ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.question_five?.value === true ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.question_five_reponse?.value ? `"${dataCollection.question_five_reponse.value}"` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Q6: Work Auth */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded">
+                      <span className="text-sm font-medium">Q6: Work Eligible</span>
+                      <div className="flex items-center space-x-2">
+                        {dataCollection.question_six?.value === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : dataCollection.question_six?.value === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-sm text-slate-600">
+                          {dataCollection.question_six?.value !== null ? (dataCollection.question_six?.value ? 'Yes' : 'No') : '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {candidate.qualified === null && (
+                  <div className="flex space-x-2 mt-4 pt-4 border-t border-slate-200">
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                      disabled={qualifyMutation.isPending}
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Qualify
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                      disabled={qualifyMutation.isPending}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
       
       {/* Pagination */}
