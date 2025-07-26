@@ -190,29 +190,70 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
   const allData = data._all;
   
+  // Extract conversation highlights from transcript
+  const getConversationHighlights = () => {
+    if (!candidate.transcript) return [];
+    try {
+      const transcript = JSON.parse(candidate.transcript);
+      return transcript
+        .filter((turn: any) => turn.role === 'user' && turn.message && turn.message.trim().length > 0)
+        .slice(0, 5) // Show first 5 user responses
+        .map((turn: any, index: number) => ({
+          question: index === 0 ? "First Name" : 
+                   index === 1 ? "Last Name" : 
+                   index === 2 ? "Phone Number" :
+                   index === 3 ? "Valid CDL Class A?" :
+                   index === 4 ? "24+ Months Experience?" : `Response ${index + 1}`,
+          answer: turn.message
+        }));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const highlights = getConversationHighlights();
+  
   return (
     <div className="p-4 bg-slate-50 border-l-4 border-blue-200">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Question Responses */}
         <div>
-          <h4 className="font-semibold text-slate-800 mb-3">Question Responses</h4>
+          <h4 className="font-semibold text-slate-800 mb-3">Key Responses</h4>
           <div className="space-y-3">
-            {Object.entries(allData).map(([key, value]: [string, any]) => {
-              if (key.includes('response') && value?.value) {
-                const questionLabel = key.replace(/_response$/, '').replace(/_/g, ' ');
-                return (
-                  <div key={key} className="bg-white p-3 rounded border">
-                    <div className="text-sm font-medium text-slate-600 capitalize mb-1">
-                      {questionLabel}
+            {allData && Object.keys(allData).length > 0 ? (
+              Object.entries(allData).map(([key, value]: [string, any]) => {
+                if (value?.value !== null && value?.value !== undefined) {
+                  const questionLabel = key.replace(/_/g, ' ').replace(/question/i, 'Q');
+                  return (
+                    <div key={key} className="bg-white p-3 rounded border">
+                      <div className="text-sm font-medium text-slate-600 capitalize mb-1">
+                        {questionLabel}
+                      </div>
+                      <div className="text-slate-800">
+                        {typeof value.value === 'boolean' 
+                          ? (value.value ? '✓ Yes' : '✗ No')
+                          : `"${value.value}"`
+                        }
+                      </div>
                     </div>
-                    <div className="text-slate-800">
-                      "{value.value}"
-                    </div>
+                  );
+                }
+                return null;
+              })
+            ) : highlights.length > 0 ? (
+              highlights.map((item, index) => (
+                <div key={index} className="bg-white p-3 rounded border">
+                  <div className="text-sm font-medium text-slate-600 mb-1">
+                    {item.question}
                   </div>
-                );
-              }
-              return null;
-            })}
+                  <div className="text-slate-800">
+                    "{item.answer}"
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-slate-500 italic">No detailed responses available</div>
+            )}
           </div>
         </div>
         
