@@ -434,7 +434,7 @@ export default function CandidatesAgGrid({
     { 
       headerName: '', 
       field: 'expand',
-      width: 50,
+      width: 40,
       cellRenderer: (params: any) => (
         <Button
           variant="ghost"
@@ -442,7 +442,7 @@ export default function CandidatesAgGrid({
           className="p-1 h-auto"
           onClick={() => toggleRowExpansion(params.data.id)}
         >
-          <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(params.data.id) ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3 h-3 transition-transform ${expandedRows.has(params.data.id) ? 'rotate-180' : ''}`} />
         </Button>
       ),
       sortable: false,
@@ -452,22 +452,39 @@ export default function CandidatesAgGrid({
     { 
       headerName: 'Name', 
       field: 'name', 
-      minWidth: 160
+      width: 120,
+      minWidth: 100
     },
-    { headerName: 'Phone', field: 'phone', minWidth: 140 },
-    { headerName: 'Call Time', field: 'callTime', minWidth: 150 },
+    { 
+      headerName: 'Phone', 
+      field: 'phone', 
+      width: 120,
+      minWidth: 110
+    },
+    { 
+      headerName: 'Call Time', 
+      field: 'callTime', 
+      width: 130,
+      minWidth: 120,
+      cellRenderer: (params: any) => {
+        const date = new Date(params.data._meta.createdAt);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    },
     ...questionMeta.map(q => ({
       headerName: q.label,
       field: q.label,
-      minWidth: 90,
-      maxWidth: 110,
+      width: 70,
+      minWidth: 60,
+      maxWidth: 80,
       cellRenderer: (p: any) => <StatusIcon value={p.value} />,
       cellStyle: { textAlign: 'center' }
     })),
     {
       headerName: 'Status',
       field: 'qualified',
-      minWidth: 130,
+      width: 100,
+      minWidth: 90,
       cellRenderer: StatusBadgeRenderer
     }
   ], [questionMeta, expandedRows]);
@@ -538,7 +555,7 @@ export default function CandidatesAgGrid({
       </div>
 
       {/* AG Grid */}
-      <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
+      <div className="ag-theme-alpine" style={{ height: '500px', width: '100%' }}>
         <AgGridReact
           ref={gridRef}
           rowData={rowData}
@@ -547,13 +564,15 @@ export default function CandidatesAgGrid({
             resizable: true,
             sortable: true,
             filter: true,
-            wrapText: true,
-            autoHeight: false
+            wrapText: false,
+            autoHeight: false,
+            flex: 0
           }}
           rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
           onSelectionChanged={handleSelectionChanged}
-          rowHeight={60}
-          headerHeight={50}
+          rowHeight={45}
+          headerHeight={40}
+          suppressHorizontalScroll={false}
           onFirstDataRendered={() => {
             gridRef.current?.api.sizeColumnsToFit();
           }}
