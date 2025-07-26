@@ -1,5 +1,6 @@
 import { ServerClient } from 'postmark';
 import type { CallRecord, ReportsConfig, EmailLog } from '@shared/schema';
+import * as XLSX from 'xlsx';
 
 export interface EmailTemplate {
   subject: string;
@@ -238,6 +239,173 @@ export class PostmarkService {
     text += `\nGenerated: ${new Date().toLocaleString()}`;
 
     return text;
+  }
+
+  /**
+   * Generate Excel file from call record data
+   */
+  private generateExcelAttachment(callRecord: CallRecord): string {
+    const workbook = XLSX.utils.book_new();
+    
+    // Extract data from JSONB fields
+    const extractedData = callRecord.extractedData as any || {};
+    const rawData = callRecord.rawData as any || {};
+    
+    // Main candidate information
+    const candidateData = [{
+      'Application Date': new Date(callRecord.createdAt).toLocaleDateString(),
+      'Candidate Name': `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim(),
+      'Phone Number': callRecord.phone || 'Not provided',
+      'Conversation ID': callRecord.conversationId,
+      'Agent ID': callRecord.agentId,
+      'Status': callRecord.qualified ? 'APPROVED' : 'DENIED',
+      'CDL Class A': extractedData.cdlA ? 'Yes' : 'No',
+      'Has 24+ Months Experience': extractedData.experience24Months ? 'Yes' : 'No',
+      'Work Eligible': extractedData.workEligible ? 'Yes' : 'No',
+      'Has Violations': extractedData.hasViolations ? 'Yes' : 'No',
+      'Call Duration (seconds)': extractedData.callDuration || 'Unknown',
+      'Call Successful': extractedData.callSuccessful ? 'Yes' : 'No'
+    }];
+
+    // Add candidate data sheet
+    const candidateSheet = XLSX.utils.json_to_sheet(candidateData);
+    XLSX.utils.book_append_sheet(workbook, candidateSheet, 'Candidate Details');
+
+    // Extract questions and answers if available
+    if (rawData.analysis?.data_collection_results) {
+      const qaData = [];
+      const dataCollection = rawData.analysis.data_collection_results;
+      
+      for (const [key, value] of Object.entries(dataCollection)) {
+        const question = value as any;
+        qaData.push({
+          'Question ID': key,
+          'Question': question.json_schema?.description || 'No question text',
+          'Answer': question.value !== null ? String(question.value) : 'Not answered',
+          'Rationale': question.rationale || 'No rationale provided'
+        });
+      }
+      
+      if (qaData.length > 0) {
+        const qaSheet = XLSX.utils.json_to_sheet(qaData);
+        XLSX.utils.book_append_sheet(workbook, qaSheet, 'Q&A Details');
+      }
+    }
+
+    // Convert to base64 for email attachment
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return excelBuffer.toString('base64');
+  }
+
+  /**
+   * Send candidate application notification email
+   */
+  async sendCandidateNotification(
+    recipientEmail: string,
+    callRecord: CallRecord,
+    approved: boolean
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.isEnabled) {
+      return { success: false, error: 'Postmark not configured' };
+    }
+
+    try {
+      const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
+      const subject = approved ? 'New Candidate Application Approved' : 'New Candidate Application Denied';
+      const status = approved ? 'APPROVED' : 'DENIED';
+      const statusColor = approved ? '#10b981' : '#ef4444';
+      
+      // Generate Excel attachment
+      const excelAttachment = this.generateExcelAttachment(callRecord);
+      const fileName = `candidate_${callRecord.conversationId}_${approved ? 'approved' : 'denied'}.xlsx`;
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1e293b; margin: 0 0 10px 0;">TruckRecruit Pro - Application Update</h2>
+            <div style="background-color: ${statusColor}; color: white; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 16px;">
+              APPLICATION ${status}
+            </div>
+          </div>
+          
+          <h3 style="color: #1e293b;">Candidate Information</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background-color: #f9fafb;">
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Name:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${candidateName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Phone:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${callRecord.phone || 'Not provided'}</td>
+            </tr>
+            <tr style="background-color: #f9fafb;">
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Application Date:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${new Date(callRecord.createdAt).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Conversation ID:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${callRecord.conversationId}</td>
+            </tr>
+          </table>
+
+          <h3 style="color: #1e293b;">Call Details</h3>
+          <p style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            Complete call details and qualification information are available in the attached Excel file.
+          </p>
+
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 14px;">
+            This is an automated notification from TruckRecruit Pro.<br>
+            Generated at: ${new Date().toLocaleString()}
+          </p>
+        </div>
+      `;
+
+      const textBody = `
+TruckRecruit Pro - Application Update
+
+APPLICATION ${status}
+
+Candidate Information:
+- Name: ${candidateName}
+- Phone: ${callRecord.phone || 'Not provided'}
+- Application Date: ${new Date(callRecord.createdAt).toLocaleDateString()}
+- Conversation ID: ${callRecord.conversationId}
+
+Complete call details are available in the attached Excel file.
+
+Generated at: ${new Date().toLocaleString()}
+      `;
+
+      // Use the same email structure as the working sendTestEmail method
+      const response = await this.client.sendEmail({
+        From: process.env.FROM_EMAIL || 'noreply@truckrecruit.pro',
+        To: recipientEmail,
+        Subject: subject,
+        HtmlBody: htmlBody,
+        TextBody: textBody,
+        Attachments: [{
+          Name: fileName,
+          Content: excelAttachment,
+          ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }],
+        MessageStream: 'outbound',
+        TrackOpens: true
+      });
+
+      console.log(`Candidate notification sent to ${recipientEmail}, MessageID: ${response.MessageID}`);
+      
+      return {
+        success: true,
+        messageId: response.MessageID,
+      };
+    } catch (error) {
+      console.error('Failed to send candidate notification:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   /**

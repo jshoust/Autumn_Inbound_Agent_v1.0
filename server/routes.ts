@@ -914,6 +914,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test candidate notification endpoint - simplified approach with working email
+  app.post('/api/test-candidate-notification', requireAuth, async (req, res) => {
+    try {
+      const { to, approved } = req.body;
+      
+      if (!to) {
+        return res.status(400).json({ error: 'Missing required field: to' });
+      }
+
+      // Get the latest call record for testing
+      const callRecords = await storage.getCallRecords(undefined, 1);
+      if (callRecords.length === 0) {
+        return res.status(404).json({ error: 'No call records found for testing' });
+      }
+
+      const callRecord = callRecords[0];
+      const isApproved = approved !== false; // Default to approved unless explicitly false
+      const status = isApproved ? 'APPROVED' : 'DENIED';
+      const subject = isApproved ? 'New Candidate Application Approved' : 'New Candidate Application Denied';
+      const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
+
+      // Create detailed message with call information for the working test email
+      const detailedMessage = `
+        <h3>Candidate Application ${status}</h3>
+        
+        <h4>Candidate Information:</h4>
+        <table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">
+          <tr><td><strong>Name:</strong></td><td>${candidateName}</td></tr>
+          <tr><td><strong>Phone:</strong></td><td>${callRecord.phone || 'Not provided'}</td></tr>
+          <tr><td><strong>Application Date:</strong></td><td>${new Date(callRecord.createdAt).toLocaleDateString()}</td></tr>
+          <tr><td><strong>Conversation ID:</strong></td><td>${callRecord.conversationId}</td></tr>
+          <tr><td><strong>Agent ID:</strong></td><td>${callRecord.agentId}</td></tr>
+        </table>
+
+        <h4>Qualification Details:</h4>
+        <table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">
+          <tr><td><strong>CDL Class A:</strong></td><td>${(callRecord.extractedData as any)?.cdlA ? 'Yes' : 'No'}</td></tr>
+          <tr><td><strong>24+ Months Experience:</strong></td><td>${(callRecord.extractedData as any)?.experience24Months ? 'Yes' : 'No'}</td></tr>
+          <tr><td><strong>Work Eligible:</strong></td><td>${(callRecord.extractedData as any)?.workEligible ? 'Yes' : 'No'}</td></tr>
+          <tr><td><strong>Has Violations:</strong></td><td>${(callRecord.extractedData as any)?.hasViolations ? 'Yes' : 'No'}</td></tr>
+          <tr><td><strong>Call Duration:</strong></td><td>${(callRecord.extractedData as any)?.callDuration || 'Unknown'} seconds</td></tr>
+          <tr><td><strong>Call Successful:</strong></td><td>${(callRecord.extractedData as any)?.callSuccessful ? 'Yes' : 'No'}</td></tr>
+        </table>
+
+        <p><strong>Note:</strong> This email contains all the call details. An Excel file with this information has been generated and is available for download through the dashboard.</p>
+      `;
+
+      // Use the working test email function instead
+      const result = await postmarkService.sendTestEmail(to, subject, detailedMessage);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          messageId: result.messageId,
+          message: `Candidate notification (${status}) sent successfully with call details`,
+          candidateName: candidateName,
+          note: 'Email sent with embedded call details. Excel generation is available through the dashboard.'
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.error || 'Failed to send candidate notification'
+        });
+      }
+    } catch (error) {
+      console.error('Test candidate notification error:', error);
+      res.status(500).json({ error: 'Failed to send test candidate notification' });
+    }
+  });
+
+  // Generate and download Excel report endpoint
+  app.get('/api/excel-report/:conversationId', requireAuth, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      
+      // Find the call record
+      const callRecords = await storage.getCallRecords(conversationId, 10);
+      const callRecord = callRecords.find(record => record.conversationId === conversationId);
+      
+      if (!callRecord) {
+        return res.status(404).json({ error: 'Call record not found' });
+      }
+
+      // Generate Excel file using the same function
+      const postmark = new PostmarkService();
+      const excelBase64 = (postmark as any).generateExcelAttachment(callRecord);
+      const excelBuffer = Buffer.from(excelBase64, 'base64');
+      
+      // Set headers for file download
+      const fileName = `candidate_${conversationId}_${callRecord.qualified ? 'approved' : 'denied'}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', excelBuffer.length);
+      
+      res.send(excelBuffer);
+    } catch (error) {
+      console.error('Excel report generation error:', error);
+      res.status(500).json({ error: 'Failed to generate Excel report' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
