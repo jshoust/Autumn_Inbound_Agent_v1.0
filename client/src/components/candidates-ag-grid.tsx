@@ -214,102 +214,89 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const highlights = getConversationHighlights();
   
   return (
-    <div className="p-4 bg-slate-50 border-l-4 border-blue-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Question Responses */}
-        <div>
-          <h4 className="font-semibold text-slate-800 mb-3">Key Responses</h4>
-          <div className="space-y-3">
+    <div className="w-full bg-slate-50 border border-slate-200 rounded p-3 m-1">
+      <div className="flex flex-wrap gap-4 text-sm">
+        {/* Key Responses - Horizontal Layout */}
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-slate-700 mb-2">Key Responses:</div>
+          <div className="flex flex-wrap gap-2">
             {allData && Object.keys(allData).length > 0 ? (
-              Object.entries(allData).map(([key, value]: [string, any]) => {
+              Object.entries(allData).slice(0, 4).map(([key, value]: [string, any]) => {
                 if (value?.value !== null && value?.value !== undefined) {
-                  const questionLabel = key.replace(/_/g, ' ').replace(/question/i, 'Q');
+                  const questionLabel = key.replace(/_/g, ' ').replace(/question/i, 'Q').substring(0, 15);
                   return (
-                    <div key={key} className="bg-white p-3 rounded border">
-                      <div className="text-sm font-medium text-slate-600 capitalize mb-1">
-                        {questionLabel}
-                      </div>
-                      <div className="text-slate-800">
-                        {typeof value.value === 'boolean' 
-                          ? (value.value ? '✓ Yes' : '✗ No')
-                          : `"${value.value}"`
-                        }
-                      </div>
-                    </div>
+                    <span key={key} className="inline-block bg-white px-2 py-1 rounded border text-xs">
+                      <strong>{questionLabel}:</strong> {typeof value.value === 'boolean' 
+                        ? (value.value ? '✓ Yes' : '✗ No')
+                        : String(value.value).substring(0, 20) + (String(value.value).length > 20 ? '...' : '')
+                      }
+                    </span>
                   );
                 }
                 return null;
               })
             ) : highlights.length > 0 ? (
-              highlights.map((item, index) => (
-                <div key={index} className="bg-white p-3 rounded border">
-                  <div className="text-sm font-medium text-slate-600 mb-1">
-                    {item.question}
-                  </div>
-                  <div className="text-slate-800">
-                    "{item.answer}"
-                  </div>
-                </div>
+              highlights.slice(0, 3).map((item, index) => (
+                <span key={index} className="inline-block bg-white px-2 py-1 rounded border text-xs">
+                  <strong>{item.question}:</strong> {item.answer.substring(0, 20)}...
+                </span>
               ))
             ) : (
-              <div className="text-slate-500 italic">No detailed responses available</div>
+              <span className="text-slate-500 italic text-xs">No detailed responses available</span>
             )}
           </div>
         </div>
         
-        {/* Contact & Actions */}
-        <div>
-          <h4 className="font-semibold text-slate-800 mb-3">Actions</h4>
-          <div className="space-y-3">
-            {candidate.transcript && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => onViewTranscript(candidate)}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                View Full Transcript
-              </Button>
-            )}
-            
-            {candidate.qualified === null ? (
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                  onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                  disabled={qualifyMutation.isPending}
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Qualify
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                  disabled={qualifyMutation.isPending}
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Reject
-                </Button>
-              </div>
-            ) : (
+        {/* Actions - Compact */}
+        <div className="flex gap-2 items-center">
+          {candidate.transcript && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1"
+              onClick={() => onViewTranscript(candidate)}
+            >
+              <FileText className="w-3 h-3 mr-1" />
+              Transcript
+            </Button>
+          )}
+          
+          {candidate.qualified === null ? (
+            <>
               <Button
                 size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => qualifyMutation.mutate({ 
-                  id: candidate.id, 
-                  qualified: !candidate.qualified 
-                })}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1"
+                onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
                 disabled={qualifyMutation.isPending}
               >
-                {candidate.qualified ? 'Mark as Unqualified' : 'Mark as Qualified'}
+                <Check className="w-3 h-3 mr-1" />
+                Qualify
               </Button>
-            )}
-          </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="text-xs px-2 py-1"
+                onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                disabled={qualifyMutation.isPending}
+              >
+                <X className="w-3 h-3 mr-1" />
+                Reject
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs px-2 py-1"
+              onClick={() => qualifyMutation.mutate({ 
+                id: candidate.id, 
+                qualified: !candidate.qualified 
+              })}
+              disabled={qualifyMutation.isPending}
+            >
+              {candidate.qualified ? 'Unqualify' : 'Qualify'}
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -461,14 +448,19 @@ export default function CandidatesAgGrid({
     const { data, colDef } = params;
     
     if (data._rowType === 'expanded') {
-      // This is an expanded row - show full width content
+      // This is an expanded row - only show content in the first column, span full width
       if (colDef.field === 'expand') {
-        return null;
+        return (
+          <div className="w-full" style={{ width: '100vw', marginLeft: '-20px' }}>
+            <DetailCellRenderer 
+              data={data} 
+              onViewTranscript={onViewTranscript} 
+              qualifyMutation={qualifyMutation} 
+            />
+          </div>
+        );
       }
-      if (colDef.field === 'name') {
-        return <DetailCellRenderer data={data} onViewTranscript={onViewTranscript} qualifyMutation={qualifyMutation} />;
-      }
-      return null;
+      return <div style={{ backgroundColor: 'transparent' }}></div>;
     }
     
     // Regular row rendering
