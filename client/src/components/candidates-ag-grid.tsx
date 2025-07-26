@@ -86,8 +86,39 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
         if (item?.json_schema?.description) {
           // Extract the actual question from the description (usually in quotes)
           const description = item.json_schema.description;
-          const questionMatch = description.match(/"([^"]+)"/);
-          const question = questionMatch ? questionMatch[1] : description.split('\n').pop()?.trim() || q.key;
+          
+          // Try multiple patterns to extract questions
+          let question = '';
+          
+          // Pattern 1: Text in double quotes
+          const doubleQuoteMatch = description.match(/"([^"]+)"/);
+          if (doubleQuoteMatch) {
+            question = doubleQuoteMatch[1];
+          }
+          // Pattern 2: Text after "question:" or similar
+          else if (description.includes('question')) {
+            const lines = description.split('\n');
+            const questionLine = lines.find(line => 
+              line.toLowerCase().includes('question') && line.includes('?')
+            );
+            if (questionLine) {
+              question = questionLine.replace(/.*question[:\s]*/i, '').trim();
+            }
+          }
+          // Pattern 3: Any line ending with question mark
+          else {
+            const lines = description.split('\n');
+            const questionLine = lines.find(line => line.trim().endsWith('?'));
+            if (questionLine) {
+              question = questionLine.trim();
+            }
+          }
+          
+          // Fallback to last non-empty line
+          if (!question) {
+            const lines = description.split('\n').filter(line => line.trim());
+            question = lines[lines.length - 1]?.trim() || q.key;
+          }
           
           return {
             label: q.label,
@@ -97,7 +128,7 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
         }
         return {
           label: q.label,
-          question: q.key,
+          question: `Question data not available for ${q.key}`,
           key: q.key
         };
       });
