@@ -932,8 +932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const callRecord = callRecords[0];
       const isApproved = approved !== false; // Default to approved unless explicitly false
       const status = isApproved ? 'APPROVED' : 'DENIED';
-      const subject = isApproved ? 'New Candidate Application Approved' : 'New Candidate Application Denied';
       const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
+      const subject = isApproved ? `New Candidate Application Approved - ${candidateName}` : `New Candidate Application Denied - ${candidateName}`;
 
       // Create detailed message with call information for the working test email
       const detailedMessage = `
@@ -944,8 +944,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <tr><td><strong>Name:</strong></td><td>${candidateName}</td></tr>
           <tr><td><strong>Phone:</strong></td><td>${callRecord.phone || 'Not provided'}</td></tr>
           <tr><td><strong>Application Date:</strong></td><td>${new Date(callRecord.createdAt).toLocaleDateString()}</td></tr>
-          <tr><td><strong>Conversation ID:</strong></td><td>${callRecord.conversationId}</td></tr>
-          <tr><td><strong>Agent ID:</strong></td><td>${callRecord.agentId}</td></tr>
         </table>
 
         <h4>Qualification Details:</h4>

@@ -311,8 +311,8 @@ export class PostmarkService {
 
     try {
       const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
-      const subject = approved ? 'New Candidate Application Approved' : 'New Candidate Application Denied';
       const status = approved ? 'APPROVED' : 'DENIED';
+      const subject = approved ? `New Candidate Application Approved - ${candidateName}` : `New Candidate Application Denied - ${candidateName}`;
       const statusColor = approved ? '#10b981' : '#ef4444';
       
       // Generate Excel attachment
@@ -342,10 +342,6 @@ export class PostmarkService {
               <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Application Date:</td>
               <td style="padding: 10px; border: 1px solid #e5e7eb;">${new Date(callRecord.createdAt).toLocaleDateString()}</td>
             </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Conversation ID:</td>
-              <td style="padding: 10px; border: 1px solid #e5e7eb;">${callRecord.conversationId}</td>
-            </tr>
           </table>
 
           <h3 style="color: #1e293b;">Call Details</h3>
@@ -370,7 +366,6 @@ Candidate Information:
 - Name: ${candidateName}
 - Phone: ${callRecord.phone || 'Not provided'}
 - Application Date: ${new Date(callRecord.createdAt).toLocaleDateString()}
-- Conversation ID: ${callRecord.conversationId}
 
 Complete call details are available in the attached Excel file.
 
@@ -400,7 +395,6 @@ Generated at: ${new Date().toLocaleString()}
               <p>Please find the detailed candidate information in the attached Excel file.</p>
               <p><strong>Candidate:</strong> ${candidateName}</p>
               <p><strong>Status:</strong> ${status}</p>
-              <p><strong>Conversation ID:</strong> ${callRecord.conversationId}</p>
               <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 14px;">
                 This Excel file contains detailed call transcripts, Q&A responses, and qualification data.
@@ -411,7 +405,6 @@ Generated at: ${new Date().toLocaleString()}
 
 Candidate: ${candidateName}
 Status: ${status}
-Conversation ID: ${callRecord.conversationId}
 
 This Excel file contains detailed call transcripts, Q&A responses, and qualification data.`,
           Attachments: [{
