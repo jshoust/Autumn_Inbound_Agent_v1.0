@@ -120,18 +120,24 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
             question = lines[lines.length - 1]?.trim() || q.key;
           }
           
-          // Debug log to see what we're working with
-          console.log(`Before cleaning [${q.label}]:`, JSON.stringify(question));
+          // Comprehensive quote stripping function
+          function stripOuterQuotes(str: string) {
+            let cleaned = str.trim();
+            while (
+              (
+                (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+                (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+                (cleaned.startsWith('\u201C') && cleaned.endsWith('\u201D')) ||
+                (cleaned.startsWith('\u2018') && cleaned.endsWith('\u2019')) ||
+                (cleaned.startsWith('`') && cleaned.endsWith('`'))
+              ) && cleaned.length > 1
+            ) {
+              cleaned = cleaned.substring(1, cleaned.length - 1).trim();
+            }
+            return cleaned;
+          }
           
-          // Aggressive quote removal - handle all quote types and multiple layers
-          // Remove from start: any combination of quotes and spaces
-          question = question.replace(/^[\s"'"""'''`]+/g, '');
-          // Remove from end: any combination of quotes and spaces  
-          question = question.replace(/[\s"'"""'''`]+$/g, '');
-          // Final trim to clean up any remaining whitespace
-          question = question.trim();
-          
-          console.log(`After cleaning [${q.label}]:`, JSON.stringify(question));
+          question = stripOuterQuotes(question);
           
           return {
             label: q.label,
