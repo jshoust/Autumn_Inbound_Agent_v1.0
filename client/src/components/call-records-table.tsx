@@ -46,6 +46,11 @@ function getQuestionColumns(records: CallRecord[]): QuestionColumn[] {
   const columns: QuestionColumn[] = [];
   const seenKeys = new Set<string>();
   
+  // Ensure records is an array before processing
+  if (!Array.isArray(records)) {
+    return columns;
+  }
+  
   // Extract all unique question keys from the data
   records.forEach(record => {
     const dataCollection = record.rawData?.analysis?.data_collection_results || {};
@@ -232,17 +237,24 @@ export default function CallRecordsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  const { data: callRecords = [], isLoading, refetch } = useQuery<CallRecord[]>({
+  const { data: callRecords = [], isLoading, error, refetch } = useQuery<CallRecord[]>({
     queryKey: ['/api/call-records', searchTerm],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      return fetch(`/api/call-records?${params.toString()}`).then(res => res.json());
+      const response = await fetch(`/api/call-records?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch call records: ${response.status}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     refetchInterval: 5000, // Poll every 5 seconds
   });
 
-  const questionColumns = getQuestionColumns(callRecords);
+  // Ensure callRecords is always an array before processing
+  const safeCallRecords = Array.isArray(callRecords) ? callRecords : [];
+  const questionColumns = getQuestionColumns(safeCallRecords);
 
   const toggleRow = (recordId: number) => {
     const newExpanded = new Set(expandedRows);
@@ -255,10 +267,10 @@ export default function CallRecordsTable() {
   };
 
   const toggleAllRows = () => {
-    if (expandedRows.size === callRecords.length) {
+    if (expandedRows.size === safeCallRecords.length) {
       setExpandedRows(new Set());
     } else {
-      setExpandedRows(new Set(callRecords.map(r => r.id)));
+      setExpandedRows(new Set(safeCallRecords.map(r => r.id)));
     }
   };
 
@@ -266,6 +278,14 @@ export default function CallRecordsTable() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-lg">Loading call records...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-red-600">Error loading call records: {error.message}</div>
       </div>
     );
   }
@@ -278,12 +298,12 @@ export default function CallRecordsTable() {
             <div>
               <CardTitle>Call Records Data Table</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Agent: agent_01k076swcgekzt88m03gegfgsr | {callRecords.length} records
+                Agent: agent_01k076swcgekzt88m03gegfgsr | {safeCallRecords.length} records
               </p>
             </div>
             <div className="flex gap-2">
               <Button onClick={toggleAllRows} variant="outline" size="sm">
-                {expandedRows.size === callRecords.length ? 'Collapse All' : 'Expand All'}
+                {expandedRows.size === safeCallRecords.length ? 'Collapse All' : 'Expand All'}
               </Button>
               <Button onClick={() => refetch()} variant="outline" size="sm">
                 <RefreshCw className="w-4 h-4 mr-1" />
@@ -302,7 +322,7 @@ export default function CallRecordsTable() {
               className="max-w-md"
             />
             <div className="text-sm text-muted-foreground">
-              {callRecords.length} record(s) found
+              {safeCallRecords.length} record(s) found
             </div>
           </div>
 
@@ -328,7 +348,7 @@ export default function CallRecordsTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {callRecords.length === 0 ? (
+                  {safeCallRecords.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={questionColumns.length + 6} className="text-center py-8">
                         <p className="text-muted-foreground">
@@ -337,7 +357,7 @@ export default function CallRecordsTable() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    callRecords.map((record) => (
+                    safeCallRecords.map((record) => (
                       <ExpandableRow
                         key={record.id}
                         record={record}
