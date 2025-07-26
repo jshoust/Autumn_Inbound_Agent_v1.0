@@ -190,113 +190,199 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
   const allData = data._all;
   
-  // Extract conversation highlights from transcript
-  const getConversationHighlights = () => {
-    if (!candidate.transcript) return [];
-    try {
-      const transcript = JSON.parse(candidate.transcript);
-      return transcript
-        .filter((turn: any) => turn.role === 'user' && turn.message && turn.message.trim().length > 0)
-        .slice(0, 5) // Show first 5 user responses
-        .map((turn: any, index: number) => ({
-          question: index === 0 ? "First Name" : 
-                   index === 1 ? "Last Name" : 
-                   index === 2 ? "Phone Number" :
-                   index === 3 ? "Valid CDL Class A?" :
-                   index === 4 ? "24+ Months Experience?" : `Response ${index + 1}`,
-          answer: turn.message
-        }));
-    } catch (e) {
-      return [];
-    }
+  // Define proper question mapping with descriptions
+  const questionMapping = {
+    'First_Name': { question: 'What is your first name?', type: 'text' },
+    'Last_Name': { question: 'What is your last name?', type: 'text' },
+    'Phone_number': { question: 'What is your phone number?', type: 'text' },
+    'question_one': { question: 'Do you currently have a valid Class A commercial driver\'s license?', type: 'boolean' },
+    'question_one_response': { question: 'CDL Response Details', type: 'text' },
+    'Question_two': { question: 'Do you have at least 24 months of experience driving a tractor-trailer?', type: 'boolean' },
+    'question_two_response': { question: 'Experience Response Details', type: 'text' },
+    'Question_three': { question: 'Do you have verifiable experience with hoppers?', type: 'boolean' },
+    'question_three_response': { question: 'Hopper Experience Details', type: 'text' },
+    'question_four': { question: 'Are you able to be over the road for 3 weeks at a time?', type: 'boolean' },
+    'Question_four_response': { question: 'OTR Availability Details', type: 'text' },
+    'question_five': { question: 'Have you had any serious traffic violations in the last 3 years?', type: 'boolean' },
+    'question_five_reponse': { question: 'Traffic Violations Details', type: 'text' },
+    'question_six': { question: 'Are you legally eligible to work in the United States?', type: 'boolean' },
+    'schedule': { question: 'Interview Schedule Preference', type: 'text' }
   };
 
-  const highlights = getConversationHighlights();
+  // Extract and format the questions and responses
+  const getFormattedResponses = () => {
+    if (!allData || Object.keys(allData).length === 0) return [];
+    
+    const responses = [];
+    
+    // Group questions and responses logically
+    const questionGroups = [
+      ['First_Name', 'Last_Name', 'Phone_number'],
+      ['question_one', 'question_one_response'],
+      ['Question_two', 'question_two_response'],
+      ['Question_three', 'question_three_response'],
+      ['question_four', 'Question_four_response'],
+      ['question_five', 'question_five_reponse'],
+      ['question_six'],
+      ['schedule']
+    ];
+
+    questionGroups.forEach((group, groupIndex) => {
+      const groupResponses = [];
+      
+      group.forEach(key => {
+        const dataItem = allData[key];
+        const mapping = questionMapping[key];
+        
+        if (dataItem && mapping && (dataItem.value !== null && dataItem.value !== undefined && dataItem.value !== '')) {
+          let displayValue = dataItem.value;
+          
+          // Format boolean responses
+          if (mapping.type === 'boolean') {
+            displayValue = dataItem.value === true ? '✅ Yes' : dataItem.value === false ? '❌ No' : displayValue;
+          }
+          
+          // Truncate long text responses
+          if (typeof displayValue === 'string' && displayValue.length > 100) {
+            displayValue = displayValue.substring(0, 100) + '...';
+          }
+          
+          groupResponses.push({
+            question: mapping.question,
+            answer: displayValue,
+            type: mapping.type
+          });
+        }
+      });
+      
+      if (groupResponses.length > 0) {
+        responses.push(...groupResponses);
+      }
+    });
+
+    return responses;
+  };
+
+  const formattedResponses = getFormattedResponses();
   
   return (
-    <div className="w-full bg-slate-50 border border-slate-200 rounded p-3 m-1">
-      <div className="flex flex-wrap gap-4 text-sm">
-        {/* Key Responses - Horizontal Layout */}
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-slate-700 mb-2">Key Responses:</div>
-          <div className="flex flex-wrap gap-2">
-            {allData && Object.keys(allData).length > 0 ? (
-              Object.entries(allData).slice(0, 4).map(([key, value]: [string, any]) => {
-                if (value?.value !== null && value?.value !== undefined) {
-                  const questionLabel = key.replace(/_/g, ' ').replace(/question/i, 'Q').substring(0, 15);
-                  return (
-                    <span key={key} className="inline-block bg-white px-2 py-1 rounded border text-xs">
-                      <strong>{questionLabel}:</strong> {typeof value.value === 'boolean' 
-                        ? (value.value ? '✓ Yes' : '✗ No')
-                        : String(value.value).substring(0, 20) + (String(value.value).length > 20 ? '...' : '')
-                      }
-                    </span>
-                  );
-                }
-                return null;
-              })
-            ) : highlights.length > 0 ? (
-              highlights.slice(0, 3).map((item, index) => (
-                <span key={index} className="inline-block bg-white px-2 py-1 rounded border text-xs">
-                  <strong>{item.question}:</strong> {item.answer.substring(0, 20)}...
-                </span>
-              ))
-            ) : (
-              <span className="text-slate-500 italic text-xs">No detailed responses available</span>
-            )}
+    <div className="w-full bg-white border border-slate-200 rounded-lg p-4 m-2 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Call History Questions & Responses */}
+        <div className="lg:col-span-2">
+          <div className="flex items-center gap-2 mb-3">
+            <h4 className="font-semibold text-slate-800 text-sm">📞 Call History Details</h4>
+            <div className="text-xs text-slate-500">
+              {new Date(candidate.createdAt).toLocaleString()}
+            </div>
           </div>
+          
+          {formattedResponses.length > 0 ? (
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {formattedResponses.map((item, index) => (
+                <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                  <div className="text-xs font-medium text-slate-600 mb-1">
+                    Q{index + 1}: {item.question}
+                  </div>
+                  <div className={`text-sm font-medium ${
+                    item.type === 'boolean' 
+                      ? item.answer.includes('✅') ? 'text-green-700' : 'text-red-700'
+                      : 'text-slate-800'
+                  }`}>
+                    {item.answer}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
+              <div className="text-sm">No detailed call responses available</div>
+              <div className="text-xs mt-1">The call data may not have been fully processed</div>
+            </div>
+          )}
         </div>
         
-        {/* Actions - Compact */}
-        <div className="flex gap-2 items-center">
-          {candidate.transcript && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs px-2 py-1"
-              onClick={() => onViewTranscript(candidate)}
-            >
-              <FileText className="w-3 h-3 mr-1" />
-              Transcript
-            </Button>
-          )}
-          
-          {candidate.qualified === null ? (
-            <>
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1"
-                onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                disabled={qualifyMutation.isPending}
-              >
-                <Check className="w-3 h-3 mr-1" />
-                Qualify
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="text-xs px-2 py-1"
-                onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                disabled={qualifyMutation.isPending}
-              >
-                <X className="w-3 h-3 mr-1" />
-                Reject
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs px-2 py-1"
-              onClick={() => qualifyMutation.mutate({ 
-                id: candidate.id, 
-                qualified: !candidate.qualified 
-              })}
-              disabled={qualifyMutation.isPending}
-            >
-              {candidate.qualified ? 'Unqualify' : 'Qualify'}
-            </Button>
-          )}
+        {/* Actions & Summary */}
+        <div className="lg:col-span-1">
+          <div className="bg-slate-50 rounded-lg p-3 space-y-3">
+            <div>
+              <h5 className="font-semibold text-slate-700 text-sm mb-2">📋 Summary</h5>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Name:</span>
+                  <span className="font-medium">{candidate.firstName} {candidate.lastName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Phone:</span>
+                  <span className="font-medium">{candidate.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Status:</span>
+                  <span className={`font-medium ${
+                    candidate.qualified === true ? 'text-green-600' : 
+                    candidate.qualified === false ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {candidate.qualified === true ? '✅ Qualified' : 
+                     candidate.qualified === false ? '❌ Not Qualified' : '⏳ Pending'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-slate-200 pt-3">
+              <h5 className="font-semibold text-slate-700 text-sm mb-2">🔧 Actions</h5>
+              <div className="space-y-2">
+                {candidate.transcript && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => onViewTranscript(candidate)}
+                  >
+                    <FileText className="w-3 h-3 mr-1" />
+                    View Full Transcript
+                  </Button>
+                )}
+                
+                {candidate.qualified === null ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
+                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                      disabled={qualifyMutation.isPending}
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Qualify
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1 text-xs"
+                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                      disabled={qualifyMutation.isPending}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => qualifyMutation.mutate({ 
+                      id: candidate.id, 
+                      qualified: !candidate.qualified 
+                    })}
+                    disabled={qualifyMutation.isPending}
+                  >
+                    {candidate.qualified ? 'Mark as Unqualified' : 'Mark as Qualified'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
