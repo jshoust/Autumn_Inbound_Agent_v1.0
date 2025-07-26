@@ -280,15 +280,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get candidates with optional search and filter (legacy)
-  app.get('/api/candidates', async (req, res) => {
+  // Get candidates with optional search and filter (migrated to call_records)
+  app.get('/api/candidates', requireAuth, async (req, res) => {
     try {
-      const { search, status } = req.query;
-      const candidates = await storage.getCandidates(
-        search as string, 
-        status as string
+      const { search, status, agentId, qualified, limit = 50 } = req.query;
+      const callRecords = await storage.getCallRecords(
+        agentId as string,
+        parseInt(limit as string) || 50,
+        search as string
       );
-      res.json(candidates);
+      
+      // Transform call records to match expected candidate format
+      const candidates = callRecords.map(record => ({
+        id: record.id,
+        conversationId: record.conversationId,
+        firstName: record.firstName,
+        lastName: record.lastName,
+        phone: record.phone,
+        qualified: record.qualified,
+        agentId: record.agentId,
+        createdAt: record.createdAt,
+        // Extract additional data from JSONB fields
+        transcript: record.rawData?.transcript || [],
+        dataCollection: record.extractedData || {},
+        rawConversationData: record.rawData || {}
+      }));
+      
+      // Apply qualified filter if specified
+      const filteredCandidates = qualified !== undefined 
+        ? candidates.filter(c => c.qualified === (qualified === 'true'))
+        : candidates;
+        
+      res.json(filteredCandidates);
     } catch (error) {
       console.error('Error fetching candidates:', error);
       res.status(500).json({ error: 'Failed to fetch candidates' });
@@ -328,42 +351,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update candidate qualification status
-  app.post('/api/candidates/:id/qualify', async (req, res) => {
+  // Update candidate qualification status (migrated to call_records)
+  app.post('/api/candidates/:id/qualify', requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const { qualified } = req.body;
       
-      const candidate = await storage.updateCandidateQualification(
+      // Update call record qualification status
+      const callRecord = await storage.updateCallRecordQualification(
         parseInt(id), 
         qualified
       );
       
-      if (!candidate) {
+      if (!callRecord) {
         return res.status(404).json({ error: 'Candidate not found' });
       }
       
       // Send email notification if candidate was manually qualified
       if (qualified === true) {
         try {
-          await emailService.sendRecruiterNotification(candidate);
+          // Transform call record to candidate format for email
+          const candidateForEmail = {
+            firstName: callRecord.firstName,
+            lastName: callRecord.lastName,
+            phone: callRecord.phone,
+            qualified: callRecord.qualified
+          };
+          await emailService.sendRecruiterNotification(candidateForEmail);
         } catch (error) {
           console.error('Failed to send recruiter notification:', error);
           // Don't fail the whole request if email fails
         }
       }
       
-      res.json({ success: true, candidate });
+      res.json({ success: true, candidate: callRecord });
     } catch (error) {
       console.error('Error updating candidate:', error);
       res.status(500).json({ error: 'Failed to update candidate' });
     }
   });
 
-  // Get dashboard stats - Protected
+  // Get dashboard stats - Protected (migrated to call_records)
   app.get('/api/stats', requireAuth, async (req, res) => {
     try {
-      const stats = await storage.getCandidateStats();
+      const stats = await storage.getCallRecordStats();
       res.json(stats);
     } catch (error) {
       console.error('Error fetching stats:', error);

@@ -36,6 +36,13 @@ export interface IStorage {
   getCallRecordByConversationId(conversationId: string): Promise<CallRecord | undefined>;
   getCallRecordsByDateRange(startDate: Date, endDate: Date): Promise<CallRecord[]>;
   storeCandidateFromCall(conversationId: string, agentId: string, fullConversationData: any): Promise<Candidate>;
+  updateCallRecordQualification(id: number, qualified: boolean): Promise<CallRecord | undefined>;
+  getCallRecordStats(): Promise<{
+    todayCalls: number;
+    qualified: number;
+    pending: number;
+    qualificationRate: number;
+  }>;
   
   // Report Configuration methods
   getReportConfigs(): Promise<ReportsConfig[]>;
@@ -344,11 +351,11 @@ export class DatabaseStorage implements IStorage {
     
     const conditions = [];
     
-    if (agentId) {
+    if (agentId && agentId.trim() !== '') {
       conditions.push(eq(callRecords.agentId, agentId));
     }
     
-    if (search) {
+    if (search && search.trim() !== '') {
       conditions.push(or(
         like(callRecords.firstName, `%${search}%`),
         like(callRecords.lastName, `%${search}%`),
@@ -477,6 +484,47 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reportsConfig.id, id))
       .returning();
     return config || undefined;
+  }
+
+  // New method to update call record qualification status
+  async updateCallRecordQualification(id: number, qualified: boolean): Promise<CallRecord | undefined> {
+    const [callRecord] = await db
+      .update(callRecords)
+      .set({ 
+        qualified,
+        updatedAt: new Date()
+      })
+      .where(eq(callRecords.id, id))
+      .returning();
+    return callRecord || undefined;
+  }
+
+  // New method to get stats from call records
+  async getCallRecordStats(): Promise<{
+    todayCalls: number;
+    qualified: number;
+    pending: number;
+    qualificationRate: number;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const allCallRecords = await db.select().from(callRecords);
+    const todayCallRecords = allCallRecords.filter(c => 
+      c.createdAt && c.createdAt >= today
+    );
+    
+    const qualified = allCallRecords.filter(c => c.qualified === true).length;
+    const pending = allCallRecords.filter(c => c.qualified === null).length;
+    const totalProcessed = allCallRecords.filter(c => c.qualified !== null).length;
+    const qualificationRate = totalProcessed > 0 ? Math.round((qualified / totalProcessed) * 100) : 0;
+    
+    return {
+      todayCalls: todayCallRecords.length,
+      qualified,
+      pending,
+      qualificationRate
+    };
   }
 
   async deleteReportConfig(id: number): Promise<boolean> {

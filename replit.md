@@ -38,9 +38,13 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 ## Key Components
 
 ### Database Schema
-- **Candidates Table**: Stores candidate information including call data, qualification status, and driver credentials
+- **Call Records Table**: Primary storage for all incoming calls with JSONB structure for flexibility
+  - Direct columns: first_name, last_name, phone, qualified for quick queries
+  - JSONB fields: raw_data (complete ElevenLabs response), extracted_data (processed information)
+- **Candidates Table**: Legacy table (deprecated in favor of call_records)
 - **Users Table**: Basic user management for admin access
-- **Call Data**: JSON storage for flexible call transcript and answer data
+- **Reports Config Table**: Email scheduling and report configuration
+- **Email Logs Table**: Audit trail for sent email notifications
 
 ### API Endpoints
 - **POST /api/auth/login**: User authentication endpoint
@@ -71,19 +75,20 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 1. **Inbound Call Processing**:
    - ElevenLabs Voice Agent processes driver calls
    - Call data sent to `/api/inbound` webhook
-   - System parses transcript and qualification answers
-   - Candidate record created with preliminary qualification score
+   - System stores complete API response in call_records table with JSONB structure
+   - Extracted data populated for quick access and qualification scoring
 
-2. **Admin Review Process**:
-   - Dashboard displays recent calls and qualification statistics
-   - Recruiters can search and filter candidates
+2. **Admin Review Process**:  
+   - Dashboard displays call records with candidate information
+   - Recruiters can search and filter by name, phone, or conversation ID
    - Manual qualification override available through UI
-   - Real-time updates using TanStack Query
+   - Real-time updates using TanStack Query with call_records data
 
 3. **Data Persistence**:
-   - All call data stored in PostgreSQL
-   - Flexible JSON storage for call answers and transcripts
-   - Audit trail for qualification status changes
+   - All call data stored in PostgreSQL call_records table
+   - JSONB storage provides flexibility for varying ElevenLabs data structures
+   - Complete API responses preserved for analysis and debugging
+   - Extracted fields enable efficient querying and reporting
 
 ## External Dependencies
 
