@@ -4,6 +4,8 @@
 
 This is a full-stack driver recruiting application that processes inbound calls through ElevenLabs Voice Agent and provides a dashboard for reviewing candidate information. The system captures call data, evaluates driver qualifications, and provides an administrative interface for recruitment teams to manage prospects.
 
+**Current Status**: Production-ready with complete email notification system, Excel report generation, and candidate management dashboard. All major features implemented and tested.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -133,5 +135,30 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 - **Environment Variables**: Database connection strings and API keys
 - **TypeScript Configuration**: Shared paths and module resolution
 - **Build Scripts**: Separate development and production workflows
+
+The system is designed for rapid development and easy scaling, with a focus on real-time candidate processing and efficient recruitment workflow management.
+
+## Recent Changes (January 2025)
+
+- **Email Notification System**: Complete Postmark integration with candidate approval/denial notifications
+- **Excel Report Generation**: Automated candidate data export with call transcripts and Q&A details
+- **Subject Line Improvements**: Candidate names now included in email subjects for easy identification
+- **Data Privacy Updates**: Removed Conversation ID and Agent ID from email content per privacy requirements
+- **Bug Fixes**: Corrected subject line logic to properly distinguish approved vs denied candidates
+- **Authentication System**: JWT-based login with user "Autumn" and secure password protection
+- **Production Ready**: All features tested and operational, ready for deployment and GitHub duplication
+
+## Environment Setup
+
+**Required Environment Variables:**
+- `DATABASE_URL`: PostgreSQL connection string (Neon serverless)
+- `POSTMARK_SERVER_TOKEN`: Email service API key (currently: 1f036240-dcfe-45c8-a77f-1b71717c1330)
+- `FROM_EMAIL`: Sender email address (john@getboon.ai)
+- `ELEVENLABS_WEBHOOK_SECRET`: Voice agent webhook verification
+- `JWT_SECRET`: Token signing key for authentication
+
+**Test Credentials:**
+- Username: Autumn
+- Password: Boon2Moon
 
 The system is designed for rapid development and easy scaling, with a focus on real-time candidate processing and efficient recruitment workflow management.
