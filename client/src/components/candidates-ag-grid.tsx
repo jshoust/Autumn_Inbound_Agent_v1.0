@@ -266,8 +266,8 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const formattedResponses = getFormattedResponses();
   
   return (
-    <div className="w-full bg-white border border-slate-200 rounded-lg p-4 m-2 shadow-sm">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="w-full bg-white border-t border-slate-200 p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Call History Questions & Responses */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-3">
@@ -277,8 +277,8 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
             </div>
           </div>
           
-          {formattedResponses.length > 0 ? (
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+                     {formattedResponses.length > 0 ? (
+             <div className="space-y-3 max-h-56 overflow-y-auto">
               {formattedResponses.map((item, index) => (
                 <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                   <div className="text-xs font-medium text-slate-600 mb-1">
@@ -529,27 +529,27 @@ export default function CandidatesAgGrid({
     });
   };
 
-  // Custom cell renderer for expandable content
+  // Full-width cell renderer for expanded rows
+  const FullWidthCellRenderer = (params: any) => {
+    return (
+      <DetailCellRenderer 
+        data={params.data} 
+        onViewTranscript={onViewTranscript} 
+        qualifyMutation={qualifyMutation} 
+      />
+    );
+  };
+
+  // Check if a row should be full-width (expanded rows)
+  const isFullWidthRow = (rowNode: any) => {
+    return rowNode.data && rowNode.data._rowType === 'expanded';
+  };
+
+  // Custom cell renderer for regular rows
   const CellRenderer = (params: any) => {
     const { data, colDef } = params;
     
-    if (data._rowType === 'expanded') {
-      // This is an expanded row - only show content in the first column, span full width
-      if (colDef.field === 'expand') {
-        return (
-          <div className="w-full" style={{ width: '100vw', marginLeft: '-20px' }}>
-            <DetailCellRenderer 
-              data={data} 
-              onViewTranscript={onViewTranscript} 
-              qualifyMutation={qualifyMutation} 
-            />
-          </div>
-        );
-      }
-      return <div style={{ backgroundColor: 'transparent' }}></div>;
-    }
-    
-    // Regular row rendering
+    // Regular row rendering (expanded rows are handled by FullWidthCellRenderer)
     if (colDef.field === 'expand') {
       return (
         <Button
@@ -719,14 +719,16 @@ export default function CandidatesAgGrid({
             isRowSelectable: (params) => params.data._rowType !== 'expanded'
           }}
           onSelectionChanged={handleSelectionChanged}
+          isFullWidthRow={isFullWidthRow}
+          fullWidthCellRenderer={FullWidthCellRenderer}
           getRowHeight={(params) => {
-            return params.data._rowType === 'expanded' ? 200 : 45;
+            return params.data._rowType === 'expanded' ? 300 : 45;
           }}
           headerHeight={40}
           suppressHorizontalScroll={false}
           getRowStyle={(params) => {
             if (params.data._rowType === 'expanded') {
-              return { backgroundColor: '#f8fafc', border: 'none' };
+              return { backgroundColor: '#ffffff', border: 'none' };
             }
             return {};
           }}
