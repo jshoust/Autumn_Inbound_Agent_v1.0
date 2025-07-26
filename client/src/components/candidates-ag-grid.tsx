@@ -120,8 +120,13 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
             question = lines[lines.length - 1]?.trim() || q.key;
           }
           
-          // Remove any remaining quotes for consistency (both start and end)
-          question = question.replace(/^["']+|["']+$/g, '').trim();
+          // Aggressive quote removal - handle all quote types and multiple layers
+          // Remove from start: any combination of quotes and spaces
+          question = question.replace(/^[\s"'"""'''`]+/g, '');
+          // Remove from end: any combination of quotes and spaces  
+          question = question.replace(/[\s"'"""'''`]+$/g, '');
+          // Final trim to clean up any remaining whitespace
+          question = question.trim();
           
           return {
             label: q.label,
