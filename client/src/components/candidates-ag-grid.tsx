@@ -498,42 +498,39 @@ export default function CandidatesAgGrid({
 
       {/* AG Grid */}
       <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
-        <div>
-          <AgGridReact
-            ref={gridRef}
-            theme="legacy"
-            rowData={rowData}
-            columnDefs={columnDefs}
-            defaultColDef={{
-              resizable: true,
-              sortable: true,
-              filter: true,
-              wrapText: true,
-              autoHeight: true
-            }}
-            rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
-            onSelectionChanged={handleSelectionChanged}
-            rowHeight={60}
-            headerHeight={50}
-            onFirstDataRendered={() => {
-              gridRef.current?.api.sizeColumnsToFit();
-            }}
-          />
-          
-          {/* Expanded Row Details */}
-          {rowData.map((row) => (
-            expandedRows.has(row.id) && (
-              <div key={`expanded-${row.id}`} className="border-l-4 border-blue-200">
-                <DetailCellRenderer 
-                  data={row} 
-                  onViewTranscript={onViewTranscript}
-                  qualifyMutation={qualifyMutation}
-                />
-              </div>
-            )
-          ))}
-        </div>
+        <AgGridReact
+          ref={gridRef}
+          rowData={rowData}
+          columnDefs={columnDefs}
+          defaultColDef={{
+            resizable: true,
+            sortable: true,
+            filter: true,
+            wrapText: true,
+            autoHeight: false
+          }}
+          rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
+          onSelectionChanged={handleSelectionChanged}
+          rowHeight={60}
+          headerHeight={50}
+          onFirstDataRendered={() => {
+            gridRef.current?.api.sizeColumnsToFit();
+          }}
+        />
       </div>
+      
+      {/* Expanded Row Details */}
+      {rowData.map((row) => (
+        expandedRows.has(row.id) && (
+          <div key={`expanded-${row.id}`} className="border-l-4 border-blue-200 mt-2">
+            <DetailCellRenderer 
+              data={row} 
+              onViewTranscript={onViewTranscript}
+              qualifyMutation={qualifyMutation}
+            />
+          </div>
+        )
+      ))}
     </div>
   );
 }
