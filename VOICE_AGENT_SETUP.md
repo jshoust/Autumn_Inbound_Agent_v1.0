@@ -108,7 +108,7 @@ Complete ElevenLabs API response stored in `raw_data` JSONB field includes:
 
 ### Call Records Data Table
 
-Access the data table at: `http://your-domain.com/screener`
+Access the data table at: `http://your-domain.com/` (home page)
 
 **Features:**
 - **Dynamic table structure** that adapts to your questions

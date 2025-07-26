@@ -2,7 +2,7 @@
 
 ## 🎯 **COMPLETELY REDESIGNED UI**
 
-The UI has been completely changed from card-based to a **dynamic data table** format as requested.
+The UI has been completely changed from card-based to a **dynamic data table** format as requested and moved to the **home page** to replace the old table.
 
 ## 📊 **TABLE STRUCTURE**
 
