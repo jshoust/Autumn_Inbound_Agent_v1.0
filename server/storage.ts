@@ -360,18 +360,26 @@ function extractKeyData(apiResponse: any) {
   const dataCollection = apiResponse.analysis?.data_collection_results || {};
   const metadata = apiResponse.metadata || {};
   
+  // Debug logging to see actual field names
+  console.log('=== DATA COLLECTION FIELDS ===');
+  console.log('Available fields:', Object.keys(dataCollection));
+  Object.keys(dataCollection).forEach(key => {
+    console.log(`${key}:`, dataCollection[key]?.value);
+  });
+  console.log('=== END FIELDS ===');
+  
   return {
     // Contact Info
     firstName: dataCollection.First_Name?.value,
     lastName: dataCollection.Last_Name?.value,
     phoneNumber: dataCollection.Phone_number?.value,
     
-    // Qualifications
+    // Qualifications (using correct field names from API)
     cdlA: dataCollection.question_one?.value,
-    experience24Months: dataCollection.Question_two?.value,
+    experience24Months: dataCollection.question_two_response?.value, // Fixed field name
     hopperExperience: dataCollection.Question_three?.value,
     otrAvailable: dataCollection.question_four?.value,
-    cleanRecord: dataCollection.question_five?.value,
+    cleanRecord: dataCollection.question_five_reponse?.value, // Note the typo in API
     workEligible: dataCollection.question_six?.value,
     
     // Scheduling
@@ -382,11 +390,13 @@ function extractKeyData(apiResponse: any) {
     callCost: metadata.cost,
     callSuccessful: apiResponse.analysis?.call_successful === 'success',
     
-    // Qualification Status
+    // Qualification Status (CDL + Experience required, no violations)
     qualified: apiResponse.analysis?.call_successful === 'success' && 
                dataCollection.question_one?.value === true &&
-               dataCollection.Question_two?.value === true &&
-               dataCollection.question_five?.value === true &&
+               (dataCollection.question_two_response?.value === true || 
+                dataCollection.question_two_response?.value?.toLowerCase()?.includes('yes')) &&
+               (dataCollection.question_five_reponse?.value === false ||
+                dataCollection.question_five_reponse?.value?.toLowerCase()?.includes('no')) &&
                dataCollection.question_six?.value === true
   };
 }
