@@ -346,7 +346,7 @@ export default function CandidatesAgGrid({
       headerName: 'Name', 
       field: 'name', 
       minWidth: 160,
-      checkboxSelection: true
+
     },
     { headerName: 'Phone', field: 'phone', minWidth: 140 },
     { headerName: 'Call Time', field: 'callTime', minWidth: 150 },

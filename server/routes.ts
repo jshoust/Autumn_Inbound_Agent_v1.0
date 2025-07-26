@@ -276,8 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get candidates with optional search and filter (legacy) - Protected
-  app.get('/api/candidates', requireAuth, async (req, res) => {
+  // Get candidates with optional search and filter (legacy)
+  app.get('/api/candidates', async (req, res) => {
     try {
       const { search, status } = req.query;
       const candidates = await storage.getCandidates(

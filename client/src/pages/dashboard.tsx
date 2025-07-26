@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/header";
 import CandidatesAgGrid from "@/components/candidates-ag-grid";
+import { apiRequest } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
 
 interface TranscriptModalData {
@@ -21,10 +22,7 @@ export default function Dashboard() {
   const { data: candidates = [], isLoading, error, refetch } = useQuery<Candidate[]>({
     queryKey: ['/api/candidates'],
     queryFn: async () => {
-      const response = await fetch('/api/candidates');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch candidates: ${response.status}`);
-      }
+      const response = await apiRequest('GET', '/api/candidates');
       return response.json();
     },
     refetchInterval: 5000, // Poll every 5 seconds
@@ -34,10 +32,7 @@ export default function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ['/api/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/stats');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.status}`);
-      }
+      const response = await apiRequest('GET', '/api/stats');
       return response.json();
     },
     refetchInterval: 5000,
