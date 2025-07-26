@@ -387,6 +387,7 @@ export default function CandidatesAgGrid({
       <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
         <AgGridReact
           ref={gridRef}
+          theme="legacy"
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={{
@@ -396,9 +397,8 @@ export default function CandidatesAgGrid({
             wrapText: true,
             autoHeight: true
           }}
-          rowSelection="multiple"
+          rowSelection={{ mode: 'multiRow', enableClickSelection: false }}
           onSelectionChanged={handleSelectionChanged}
-          suppressRowClickSelection={true}
           rowHeight={60}
           headerHeight={60}
           groupHeaderHeight={40}

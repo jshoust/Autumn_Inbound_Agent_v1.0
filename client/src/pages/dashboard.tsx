@@ -43,11 +43,27 @@ export default function Dashboard() {
   });
 
   const handleViewTranscript = (candidate: Candidate) => {
+    // Handle transcript data - it could be a string or an array of conversation objects
+    let transcriptText = 'No transcript available';
+    
+    if (candidate.transcript) {
+      if (typeof candidate.transcript === 'string') {
+        transcriptText = candidate.transcript;
+      } else if (Array.isArray(candidate.transcript)) {
+        // Convert conversation array to readable transcript
+        transcriptText = candidate.transcript
+          .map((turn: any) => `${turn.role}: ${turn.message}`)
+          .join('\n\n');
+      } else if (typeof candidate.transcript === 'object') {
+        transcriptText = JSON.stringify(candidate.transcript, null, 2);
+      }
+    }
+    
     setSelectedTranscript({
-      transcript: candidate.transcript || 'No transcript available',
-      firstName: candidate.firstName,
-      lastName: candidate.lastName,
-      phone: candidate.phone
+      transcript: transcriptText,
+      firstName: candidate.firstName || undefined,
+      lastName: candidate.lastName || undefined,  
+      phone: candidate.phone || undefined
     });
   };
 
