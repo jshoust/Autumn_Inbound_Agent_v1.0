@@ -185,57 +185,92 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
   );
 }
 
-// Actions Cell Renderer
-function ActionsCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
+// Detail Cell Renderer for expanded rows
+function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
+  const allData = data._all;
   
   return (
-    <div className="flex items-center space-x-2 py-1">
-      {candidate.transcript && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs text-blue-600 hover:text-blue-800"
-          onClick={() => onViewTranscript(candidate)}
-        >
-          <FileText className="w-3 h-3 mr-1" />
-          View Details
-        </Button>
-      )}
-      {candidate.qualified === null ? (
-        <div className="flex space-x-1">
-          <Button
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white text-xs"
-            onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-            disabled={qualifyMutation.isPending}
-          >
-            <Check className="w-3 h-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="text-xs"
-            onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-            disabled={qualifyMutation.isPending}
-          >
-            <X className="w-3 h-3" />
-          </Button>
+    <div className="p-4 bg-slate-50 border-l-4 border-blue-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Question Responses */}
+        <div>
+          <h4 className="font-semibold text-slate-800 mb-3">Question Responses</h4>
+          <div className="space-y-3">
+            {Object.entries(allData).map(([key, value]: [string, any]) => {
+              if (key.includes('response') && value?.value) {
+                const questionLabel = key.replace(/_response$/, '').replace(/_/g, ' ');
+                return (
+                  <div key={key} className="bg-white p-3 rounded border">
+                    <div className="text-sm font-medium text-slate-600 capitalize mb-1">
+                      {questionLabel}
+                    </div>
+                    <div className="text-slate-800">
+                      "{value.value}"
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
         </div>
-      ) : (
-        <Button
-          size="sm"
-          variant="outline"
-          className="text-xs"
-          onClick={() => qualifyMutation.mutate({ 
-            id: candidate.id, 
-            qualified: !candidate.qualified 
-          })}
-          disabled={qualifyMutation.isPending}
-        >
-          Override
-        </Button>
-      )}
+        
+        {/* Contact & Actions */}
+        <div>
+          <h4 className="font-semibold text-slate-800 mb-3">Actions</h4>
+          <div className="space-y-3">
+            {candidate.transcript && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => onViewTranscript(candidate)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                View Full Transcript
+              </Button>
+            )}
+            
+            {candidate.qualified === null ? (
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                  onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                  disabled={qualifyMutation.isPending}
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Qualify
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                  disabled={qualifyMutation.isPending}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Reject
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => qualifyMutation.mutate({ 
+                  id: candidate.id, 
+                  qualified: !candidate.qualified 
+                })}
+                disabled={qualifyMutation.isPending}
+              >
+                {candidate.qualified ? 'Mark as Unqualified' : 'Mark as Qualified'}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -277,6 +312,7 @@ export default function CandidatesAgGrid({
 }: CandidatesAgGridProps) {
   const gridRef = useRef<AgGridReact>(null);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   const qualifyMutation = useMutation({
@@ -340,8 +376,38 @@ export default function CandidatesAgGrid({
     });
   }, [candidateList, questionMeta]);
 
+  const toggleRowExpansion = (rowId: number) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId);
+      } else {
+        newSet.add(rowId);
+      }
+      return newSet;
+    });
+  };
+
   // Build AG Grid columns
   const columnDefs = useMemo(() => [
+    { 
+      headerName: '', 
+      field: 'expand',
+      width: 50,
+      cellRenderer: (params: any) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 h-auto"
+          onClick={() => toggleRowExpansion(params.data.id)}
+        >
+          <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(params.data.id) ? 'rotate-180' : ''}`} />
+        </Button>
+      ),
+      sortable: false,
+      filter: false,
+      resizable: false
+    },
     { 
       headerName: 'Name', 
       field: 'name', 
@@ -362,22 +428,8 @@ export default function CandidatesAgGrid({
       field: 'qualified',
       minWidth: 130,
       cellRenderer: StatusBadgeRenderer
-    },
-    {
-      headerName: 'Actions',
-      field: 'actions',
-      minWidth: 150,
-      cellRenderer: (params: any) => (
-        <ActionsCellRenderer 
-          data={params.data} 
-          onViewTranscript={onViewTranscript}
-          qualifyMutation={qualifyMutation}
-        />
-      ),
-      sortable: false,
-      filter: false
     }
-  ], [questionMeta, qualifyMutation.isPending, onViewTranscript]);
+  ], [questionMeta, expandedRows]);
 
   // Export functions
   const exportCSV = () => {
@@ -446,24 +498,41 @@ export default function CandidatesAgGrid({
 
       {/* AG Grid */}
       <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
-        <AgGridReact
-          ref={gridRef}
-          theme="legacy"
-          rowData={rowData}
-          columnDefs={columnDefs}
-          defaultColDef={{
-            resizable: true,
-            sortable: true,
-            filter: true,
-            wrapText: true,
-            autoHeight: true
-          }}
-          rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
-          onSelectionChanged={handleSelectionChanged}
-          rowHeight={60}
-          headerHeight={50}
-
-        />
+        <div>
+          <AgGridReact
+            ref={gridRef}
+            theme="legacy"
+            rowData={rowData}
+            columnDefs={columnDefs}
+            defaultColDef={{
+              resizable: true,
+              sortable: true,
+              filter: true,
+              wrapText: true,
+              autoHeight: true
+            }}
+            rowSelection={{ mode: "multiRow", checkboxes: true, enableClickSelection: false, headerCheckbox: true }}
+            onSelectionChanged={handleSelectionChanged}
+            rowHeight={60}
+            headerHeight={50}
+            onFirstDataRendered={() => {
+              gridRef.current?.api.sizeColumnsToFit();
+            }}
+          />
+          
+          {/* Expanded Row Details */}
+          {rowData.map((row) => (
+            expandedRows.has(row.id) && (
+              <div key={`expanded-${row.id}`} className="border-l-4 border-blue-200">
+                <DetailCellRenderer 
+                  data={row} 
+                  onViewTranscript={onViewTranscript}
+                  qualifyMutation={qualifyMutation}
+                />
+              </div>
+            )
+          ))}
+        </div>
       </div>
     </div>
   );
