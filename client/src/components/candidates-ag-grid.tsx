@@ -120,8 +120,8 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
             question = lines[lines.length - 1]?.trim() || q.key;
           }
           
-          // Remove any remaining quotes for consistency
-          question = question.replace(/^["']|["']$/g, '').trim();
+          // Remove any remaining quotes for consistency (both start and end)
+          question = question.replace(/^["']+|["']+$/g, '').trim();
           
           return {
             label: q.label,
