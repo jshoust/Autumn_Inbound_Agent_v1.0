@@ -45,13 +45,7 @@ export function getAuthToken(): string | null {
 
 // Login function
 export async function login(username: string, password: string): Promise<AuthResponse> {
-  const response = await apiRequest("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
-    headers: {
-      "Content-Type": "application/json"
-    }
-  });
+  const response = await apiRequest("POST", "/api/auth/login", { username, password });
 
   if (!response.ok) {
     const errorData = await response.json();

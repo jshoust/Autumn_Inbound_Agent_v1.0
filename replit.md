@@ -19,6 +19,7 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 - **State Management**: TanStack Query for server state management
 - **Design System**: Custom component library based on Radix primitives
 - **Mobile Responsiveness**: Complete mobile-first design with card layouts for small screens
+- **Authentication**: JWT-based authentication with protected routes and automatic token refresh
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express server
@@ -26,6 +27,7 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 - **Database**: PostgreSQL using Drizzle ORM
 - **Database Provider**: Neon serverless PostgreSQL
 - **API Pattern**: RESTful endpoints for candidate management
+- **Authentication**: JWT tokens with bcryptjs password hashing and middleware protection
 
 ### Data Storage Solutions
 - **ORM**: Drizzle with PostgreSQL dialect
@@ -41,17 +43,23 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 - **Call Data**: JSON storage for flexible call transcript and answer data
 
 ### API Endpoints
-- **POST /api/inbound**: Webhook receiver for ElevenLabs call data
-- **GET /api/candidates**: Retrieves candidates with search and filtering
-- **POST /api/candidates/:id/qualify**: Updates candidate qualification status
-- **GET /api/stats**: Dashboard statistics and metrics
+- **POST /api/auth/login**: User authentication endpoint
+- **POST /api/auth/register**: User registration endpoint
+- **GET /api/auth/me**: Get current authenticated user
+- **POST /api/inbound**: Webhook receiver for ElevenLabs call data (unprotected)
+- **GET /api/candidates**: Retrieves candidates with search and filtering (JWT protected)
+- **POST /api/candidates/:id/qualify**: Updates candidate qualification status (JWT protected)
+- **GET /api/stats**: Dashboard statistics and metrics (JWT protected)
 
 ### Frontend Components
+- **LoginPage**: JWT authentication interface with Boon Technologies branding
+- **ProtectedRoute**: Route wrapper that enforces authentication
 - **Dashboard**: Main application view with stats overview, recent calls, and candidate management
 - **CandidatesAgGrid**: Advanced AG Grid table component with dynamic columns, inline editing, CSV/Excel export, multi-row selection, and comprehensive candidate data display
 - **TranscriptModal**: Detailed call transcript viewer with qualification controls
 - **StatsOverview**: Real-time dashboard metrics
 - **Recent Calls Section**: Live ElevenLabs conversation history with mobile-responsive design
+- **Header**: Branded navigation with user authentication controls and logout functionality
 
 ### Qualification Logic
 - **CDL Validation**: Checks for valid CDL license (specifically CDL-A)

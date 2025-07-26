@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Building2, Users, Settings } from "lucide-react";
+import { Building2, Users, Settings, LogOut } from "lucide-react";
+import { Button } from "./ui/button";
+import { logout, getCurrentUser } from "@/lib/auth";
 import logoPath from "@assets/boon_technologies_inc_logo_1753523763574.jpg";
 
 export default function Header() {
@@ -27,24 +29,41 @@ export default function Header() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex items-center space-x-1">
-            <Link href="/" className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              location === "/" 
-                ? "bg-primary text-primary-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            }`}>
-              <Users className="w-4 h-4" />
-              <span>Dashboard</span>
-            </Link>
-            <Link href="/settings" className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              location === "/settings" 
-                ? "bg-primary text-primary-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            }`}>
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
-            </Link>
-          </nav>
+          <div className="flex items-center space-x-4">
+            <nav className="flex items-center space-x-1">
+              <Link href="/" className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location === "/" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`}>
+                <Users className="w-4 h-4" />
+                <span>Dashboard</span>
+              </Link>
+              <Link href="/settings" className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location === "/settings" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`}>
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+            </nav>
+            
+            {/* User Actions */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                {getCurrentUser()?.username}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={logout}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
