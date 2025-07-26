@@ -1,0 +1,798 @@
+{
+  "agent_id": "agent_01k076swcgekzt88m03gegfgsr",
+  "conversation_id": "conv_2701k12774kae129ttn76jdyxc46",
+  "status": "done",
+  "user_id": null,
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Hello there!  This is Alex, your virtual recruiter for Autumn Transport.  Thank you for calling.  When you're ready, let me know if I can ask you a few questions before moving on to our live recruiters.\n\nIs that OK?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 0,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "Yes, go ahead.",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 11,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Great, let's get started. Can I start with your first name please?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 12,
+      "conversation_turn_metrics": {
+        "metrics": {
+          "convai_llm_service_ttf_sentence": {
+            "elapsed_time": 0.6437281399266794
+          },
+          "convai_llm_service_ttfb": {
+            "elapsed_time": 0.6432562749832869
+          }
+        }
+      },
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2496,
+              "price": 0.0003744
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 17,
+              "price": 0.000010199999999999999
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "John.",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 15,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Great, John. Can I now get your last name, please?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 17,
+      "conversation_turn_metrics": {
+        "metrics": {
+          "convai_llm_service_ttf_sentence": {
+            "elapsed_time": 0.5979727259837091
+          },
+          "convai_llm_service_ttfb": {
+            "elapsed_time": 0.5975712930085137
+          }
+        }
+      },
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2515,
+              "price": 0.00037725
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 14,
+              "price": 0.000008400000000000001
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "Shoust",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 20,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Thank you, Shoust. And lastly, can I get your phone number with area code?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 22,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2531,
+              "price": 0.00037965
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 19,
+              "price": 0.000011400000000000001
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "416-356-7310",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 27,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Thank you, John. So that's John Shoust, and your phone number is four one six, three five six, seven three one zero.\n\nOK, let's get started on the qualifying questions!\n\nFirst, do you currently have a valid Class A commercial driver’s license?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 31,
+      "conversation_turn_metrics": {
+        "metrics": {
+          "convai_llm_service_ttf_sentence": {
+            "elapsed_time": 0.8821244100108743
+          },
+          "convai_llm_service_ttfb": {
+            "elapsed_time": 0.8817687899572775
+          }
+        }
+      },
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2562,
+              "price": 0.0003843
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 61,
+              "price": 0.0000366
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "Yes. Yes",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 45,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Thank you! Next, do you have at least twenty-four months of experience driving a tractor-trailer?",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 55,
+      "conversation_turn_metrics": {
+        "metrics": {
+          "convai_llm_service_ttf_sentence": {
+            "elapsed_time": 0.8084951309720054
+          },
+          "convai_llm_service_ttfb": {
+            "elapsed_time": 0.8081420579692349
+          }
+        }
+      },
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2626,
+              "price": 0.0003939
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 22,
+              "price": 0.000013199999999999999
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "I do not",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 61,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "Thank you for your time and for sharing that information. At this time, it looks like you do not meet the minimum requirements for this position. We appreciate your interest in Autumn Transport, and we wish you the best in your job search.",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 63,
+      "conversation_turn_metrics": {
+        "metrics": {
+          "convai_llm_service_ttf_sentence": {
+            "elapsed_time": 1.0169156190240756
+          },
+          "convai_llm_service_ttfb": {
+            "elapsed_time": 1.0165729880100116
+          }
+        }
+      },
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2651,
+              "price": 0.00039765
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 48,
+              "price": 0.0000288
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "user",
+      "message": "Thank you, goodbye.",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 77,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": "audio"
+    },
+    {
+      "role": "agent",
+      "message": "You're welcome, goodbye!",
+      "tool_calls": [],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 81,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "agent",
+      "message": null,
+      "tool_calls": [
+        {
+          "type": "system",
+          "request_id": "end_call_f809e36f10f84b79973b49fee004013e",
+          "tool_name": "end_call",
+          "params_as_json": "{\"message\": \"You're welcome, goodbye!\", \"reason\": \"User said goodbye.\"}",
+          "tool_has_been_called": true,
+          "tool_details": null
+        }
+      ],
+      "tool_results": [],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 81,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": null,
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    },
+    {
+      "role": "agent",
+      "message": null,
+      "tool_calls": [],
+      "tool_results": [
+        {
+          "request_id": "end_call_f809e36f10f84b79973b49fee004013e",
+          "tool_name": "end_call",
+          "result_value": "{\"result_type\":\"end_call_success\",\"status\":\"success\",\"reason\":\"User said goodbye.\",\"message\":\"You're welcome, goodbye!\"}",
+          "is_error": false,
+          "tool_has_been_called": true,
+          "tool_latency_secs": 0.5013591879978776,
+          "dynamic_variable_updates": [],
+          "type": "system",
+          "result": {
+            "result_type": "end_call_success",
+            "status": "success",
+            "reason": "User said goodbye.",
+            "message": "You're welcome, goodbye!"
+          }
+        }
+      ],
+      "feedback": null,
+      "llm_override": null,
+      "time_in_call_secs": 81,
+      "conversation_turn_metrics": null,
+      "rag_retrieval_info": null,
+      "llm_usage": {
+        "model_usage": {
+          "gemini-2.5-flash": {
+            "input": {
+              "tokens": 2704,
+              "price": 0.0004056
+            },
+            "input_cache_read": {
+              "tokens": 0,
+              "price": 0
+            },
+            "input_cache_write": {
+              "tokens": 0,
+              "price": 0
+            },
+            "output_total": {
+              "tokens": 16,
+              "price": 0.0000096
+            }
+          }
+        }
+      },
+      "interrupted": false,
+      "original_message": null,
+      "source_medium": null
+    }
+  ],
+  "metadata": {
+    "start_time_unix_secs": 1753495081,
+    "accepted_time_unix_secs": 1753495081,
+    "call_duration_secs": 84,
+    "cost": 294,
+    "deletion_settings": {
+      "deletion_time_unix_secs": null,
+      "deleted_logs_at_time_unix_secs": null,
+      "deleted_audio_at_time_unix_secs": null,
+      "deleted_transcript_at_time_unix_secs": null,
+      "delete_transcript_and_pii": false,
+      "delete_audio": false
+    },
+    "feedback": {
+      "overall_score": null,
+      "likes": 0,
+      "dislikes": 0
+    },
+    "authorization_method": "authorization_header",
+    "charging": {
+      "dev_discount": true,
+      "is_burst": false,
+      "tier": "creator",
+      "llm_usage": {
+        "irreversible_generation": {
+          "model_usage": {
+            "gemini-2.5-flash": {
+              "input": {
+                "tokens": 18085,
+                "price": 0.00271275
+              },
+              "input_cache_read": {
+                "tokens": 0,
+                "price": 0
+              },
+              "input_cache_write": {
+                "tokens": 0,
+                "price": 0
+              },
+              "output_total": {
+                "tokens": 197,
+                "price": 0.00011819999999999999
+              }
+            }
+          }
+        },
+        "initiated_generation": {
+          "model_usage": {
+            "gemini-2.5-flash": {
+              "input": {
+                "tokens": 18085,
+                "price": 0.00271275
+              },
+              "input_cache_read": {
+                "tokens": 0,
+                "price": 0
+              },
+              "input_cache_write": {
+                "tokens": 0,
+                "price": 0
+              },
+              "output_total": {
+                "tokens": 197,
+                "price": 0.00011819999999999999
+              }
+            }
+          }
+        }
+      },
+      "llm_price": 0.00283095,
+      "llm_charge": 14,
+      "call_charge": 280
+    },
+    "phone_call": null,
+    "batch_call": null,
+    "termination_reason": "end_call tool was called.",
+    "error": null,
+    "main_language": "en",
+    "rag_usage": null,
+    "text_only": false,
+    "features_usage": {
+      "language_detection": {
+        "enabled": true,
+        "used": false
+      },
+      "transfer_to_agent": {
+        "enabled": false,
+        "used": false
+      },
+      "transfer_to_number": {
+        "enabled": false,
+        "used": false
+      },
+      "multivoice": {
+        "enabled": false,
+        "used": false
+      },
+      "pii_zrm_workspace": false,
+      "pii_zrm_agent": false
+    },
+    "eleven_assistant": {
+      "is_eleven_assistant": false
+    },
+    "initiator_id": "7zrMuxK2WFfj7N634FNDSP4c2gR2",
+    "conversation_initiation_source": "unknown",
+    "conversation_initiation_source_version": null,
+    "timezone": "America/Chicago"
+  },
+  "analysis": {
+    "evaluation_criteria_results": {},
+    "data_collection_results": {
+      "Question_two": {
+        "data_collection_id": "Question_two",
+        "value": false,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Please analyze the call to get a TRUE or FALSE to the following question.\n\n\"Do you have at least 24 months of experience driving a tractor-trailer?”\n",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user was asked 'do you have at least twenty-four months of experience driving a tractor-trailer?' and the user responded with 'I do not'. Therefore, the answer to the question is FALSE."
+      },
+      "Question_three": {
+        "data_collection_id": "Question_three",
+        "value": null,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Please analyze the call to get a true or false to the following question:\n\n\"Regarding your driving experience, do you have verifiable experience with hoppers?\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question is: \"Regarding your driving experience, do you have verifiable experience with hoppers?\" The transcript does not contain any information about the user's experience with hoppers. Therefore, I cannot answer the question."
+      },
+      "question_four": {
+        "data_collection_id": "question_four",
+        "value": null,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Pleae analyze the call to get a true or false to the following question:\n\n\"\"Are you able to be over the road for 3 weeks at a time?\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"Are you able to be over the road for 3 weeks at a time?\" was not asked in the conversation. Therefore, I cannot answer the question."
+      },
+      "question_one": {
+        "data_collection_id": "question_one",
+        "value": true,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Please analyze the call to get a TRUE or FALSE to the following question.  If they answer yes or similar to the question, then the boolean is set to TRUE.\n\n\"Do you currently have a valid Class A commercial driver’s license?”",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user was asked \"Do you currently have a valid Class A commercial driver’s license?\" and the user responded with \"Yes. Yes\". Therefore, the answer to the question is TRUE."
+      },
+      "Question_four_response": {
+        "data_collection_id": "Question_four_response",
+        "value": null,
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyze the call to get the full response to the following question:\n\n\"Are you able to be over the road for 3 weeks at a time?\"\n",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"Are you able to be over the road for 3 weeks at a time?\" was not asked in the conversation. Therefore, I cannot provide an answer."
+      },
+      "question_one_response": {
+        "data_collection_id": "question_one_response",
+        "value": "Yes. Yes",
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyze the call to extract the full response to:\n\n\"Do you currently have a valid Class A commercial driver’s license?”",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user's response to the question \"Do you currently have a valid Class A commercial driver’s license?\" is \"Yes. Yes\"."
+      },
+      "schedule": {
+        "data_collection_id": "schedule",
+        "value": null,
+        "json_schema": {
+          "type": "string",
+          "description": "Please retrieve the date and time that the caller wished to be interviewed.  Do your best to calculate the actual date and time.  For example if they say \"tomorrow at 3 pM\" , you would look up the current date in Central Time in the USA and put in \"July 16, 3PM for example\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "I reviewed the conversation and the user did not specify a date or time that they wished to be interviewed. Therefore, I cannot extract the date and time."
+      },
+      "question_three_response": {
+        "data_collection_id": "question_three_response",
+        "value": null,
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyze the call to get the full response to the question:\n\n\"Do you have verifiable experience with hoppers?\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"Do you have verifiable experience with hoppers?\" was not asked in the conversation. Therefore, it is not possible to extract the answer."
+      },
+      "Last_Name": {
+        "data_collection_id": "Last_Name",
+        "value": "Shoust",
+        "json_schema": {
+          "type": "string",
+          "description": "Please retrieve the callers last name.",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user's last name is 'Shoust' as stated in the conversation at 2025-07-25T20:58:21-05:00."
+      },
+      "First_Name": {
+        "data_collection_id": "First_Name",
+        "value": "John",
+        "json_schema": {
+          "type": "string",
+          "description": "Please retrieve the callers first name.",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user states their first name is 'John' in response to the agent asking for it."
+      },
+      "question_five": {
+        "data_collection_id": "question_five",
+        "value": null,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Please analyze the response as a whole and determine if any one of the questions is a yes, and if so, then set the answer to FALSE:\n\n\"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\" was not asked in the conversation. Therefore, I cannot determine if the answer to the question is yes or no."
+      },
+      "Phone_number": {
+        "data_collection_id": "Phone_number",
+        "value": "416-356-7310",
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyze the call to retrieve the callers phone number in numeric string format like \"111-111-1111\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user provided their phone number as 416-356-7310 during the conversation, which is extracted and formatted as requested."
+      },
+      "question_five_reponse": {
+        "data_collection_id": "question_five_reponse",
+        "value": null,
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyse the call to get the full response to the following questions.  Separate the answers by a comma if they give more than one or an explanation:\n\n\"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\"",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\" was not asked in the conversation. Therefore, I cannot answer it."
+      },
+      "question_two_response": {
+        "data_collection_id": "question_two_response",
+        "value": "I do not",
+        "json_schema": {
+          "type": "string",
+          "description": "Please analyze the call to extract the actual response to:\n\n\"do you have at least 24 months of experience driving a tractor-trailer?”",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The user's response to the question \"do you have at least 24 months of experience driving a tractor-trailer?\" is \"I do not\"."
+      },
+      "question_six": {
+        "data_collection_id": "question_six",
+        "value": null,
+        "json_schema": {
+          "type": "boolean",
+          "description": "Please analyze the call to get a TRUE or FALSE to the following question:\n\n“And finally, are you legally eligible to work in the United States?”",
+          "dynamic_variable": "",
+          "constant_value": ""
+        },
+        "rationale": "The question \"And finally, are you legally eligible to work in the United States?\" was not asked in the conversation. Therefore, I cannot determine the answer and will return null."
+      }
+    },
+    "call_successful": "success",
+    "transcript_summary": "Alex, a virtual recruiter for Autumn Transport, screened John Shoust for a driver position. John confirmed he has a Class A commercial driver’s license but lacks the required 24 months of tractor-trailer experience. As a result, he doesn't meet the minimum requirements, and the call ended.\n"
+  },
+  "conversation_initiation_client_data": {
+    "conversation_config_override": {
+      "tts": {
+        "voice_id": null
+      },
+      "conversation": {
+        "text_only": null
+      },
+      "agent": {
+        "first_message": null,
+        "language": "en",
+        "prompt": null
+      }
+    },
+    "custom_llm_extra_body": {},
+    "user_id": null,
+    "source_info": {
+      "source": null,
+      "version": null
+    },
+    "dynamic_variables": {
+      "system__current_agent_id": "agent_01k076swcgekzt88m03gegfgsr",
+      "system__agent_id": "agent_01k076swcgekzt88m03gegfgsr",
+      "system__timezone": "America/Chicago",
+      "system__caller_id": null,
+      "system__time_utc": "2025-07-26T01:59:25.407905+00:00",
+      "system__call_sid": null,
+      "system__called_number": null,
+      "system__time": "Friday, 20:59 25 July 2025",
+      "system__conversation_id": "conv_2701k12774kae129ttn76jdyxc46",
+      "system__call_duration_secs": 83,
+      "applicant_name": "applicant"
+    }
+  },
+  "has_audio": true,
+  "has_user_audio": true,
+  "has_response_audio": true
+}

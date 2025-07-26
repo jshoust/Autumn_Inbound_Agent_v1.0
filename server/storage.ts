@@ -357,47 +357,83 @@ export class DatabaseStorage implements IStorage {
 
 // Helper function to extract key data from ElevenLabs API response
 function extractKeyData(apiResponse: any) {
-  const dataCollection = apiResponse.analysis?.data_collection_results || {};
-  const metadata = apiResponse.metadata || {};
+  const transcript = apiResponse.transcript || [];
   
-  // Debug logging to see actual field names
-  console.log('=== DATA COLLECTION FIELDS ===');
-  console.log('Available fields:', Object.keys(dataCollection));
-  Object.keys(dataCollection).forEach(key => {
-    console.log(`${key}:`, dataCollection[key]?.value);
-  });
-  console.log('=== END FIELDS ===');
+  // Extract data from conversation transcript
+  let firstName = '';
+  let lastName = '';
+  let phoneNumber = '';
+  let hasCDL = false;
+  let hasExperience = false;
+  
+  // Parse transcript for key information
+  for (let i = 0; i < transcript.length; i++) {
+    const current = transcript[i];
+    const next = transcript[i + 1];
+    
+    if (current.role === 'agent' && next?.role === 'user') {
+      const agentMessage = current.message?.toLowerCase() || '';
+      const userResponse = next.message?.trim() || '';
+      
+      // Extract first name
+      if (agentMessage.includes('first name') && !firstName) {
+        firstName = userResponse;
+      }
+      
+      // Extract last name  
+      if (agentMessage.includes('last name') && !lastName) {
+        lastName = userResponse;
+      }
+      
+      // Extract phone number
+      if (agentMessage.includes('phone number') && !phoneNumber) {
+        phoneNumber = userResponse;
+      }
+      
+      // Check CDL license
+      if (agentMessage.includes('class a commercial') || agentMessage.includes('cdl')) {
+        hasCDL = userResponse.toLowerCase().includes('yes');
+      }
+      
+      // Check experience
+      if (agentMessage.includes('twenty-four months') || agentMessage.includes('24 months')) {
+        hasExperience = userResponse.toLowerCase().includes('yes') || 
+                       userResponse.toLowerCase().includes('i do');
+        // "I do not" means NO experience
+        if (userResponse.toLowerCase().includes('i do not')) {
+          hasExperience = false;
+        }
+      }
+    }
+  }
+  
+  // Calculate qualification status
+  const qualified = hasCDL && hasExperience;
+  
+  console.log('=== EXTRACTED FROM TRANSCRIPT ===');
+  console.log('First Name:', firstName);
+  console.log('Last Name:', lastName);
+  console.log('Phone:', phoneNumber);
+  console.log('Has CDL:', hasCDL);
+  console.log('Has Experience:', hasExperience);
+  console.log('Qualified:', qualified);
+  console.log('=== END EXTRACTION ===');
   
   return {
-    // Contact Info
-    firstName: dataCollection.First_Name?.value,
-    lastName: dataCollection.Last_Name?.value,
-    phoneNumber: dataCollection.Phone_number?.value,
-    
-    // Qualifications (using correct field names from API)
-    cdlA: dataCollection.question_one?.value,
-    experience24Months: dataCollection.question_two_response?.value, // Fixed field name
-    hopperExperience: dataCollection.Question_three?.value,
-    otrAvailable: dataCollection.question_four?.value,
-    cleanRecord: dataCollection.question_five_reponse?.value, // Note the typo in API
-    workEligible: dataCollection.question_six?.value,
-    
-    // Scheduling
-    interviewSchedule: dataCollection.schedule?.value,
-    
-    // Call Metrics
-    callDuration: metadata.call_duration_secs,
-    callCost: metadata.cost,
-    callSuccessful: apiResponse.analysis?.call_successful === 'success',
-    
-    // Qualification Status (CDL + Experience required, no violations)
-    qualified: apiResponse.analysis?.call_successful === 'success' && 
-               dataCollection.question_one?.value === true &&
-               (dataCollection.question_two_response?.value === true || 
-                dataCollection.question_two_response?.value?.toLowerCase()?.includes('yes')) &&
-               (dataCollection.question_five_reponse?.value === false ||
-                dataCollection.question_five_reponse?.value?.toLowerCase()?.includes('no')) &&
-               dataCollection.question_six?.value === true
+    firstName,
+    lastName,
+    phoneNumber,
+    cdlA: hasCDL,
+    experience24Months: hasExperience,
+    hopperExperience: null,
+    otrAvailable: null,
+    cleanRecord: null,
+    workEligible: null,
+    interviewSchedule: null,
+    callDuration: transcript.length > 0 ? transcript[transcript.length - 1].time_in_call_secs : 0,
+    callCost: null,
+    callSuccessful: apiResponse.status === 'done',
+    qualified
   };
 }
 
