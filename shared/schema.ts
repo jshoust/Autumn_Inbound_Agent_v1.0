@@ -9,6 +9,12 @@ export const callRecords = pgTable("call_records", {
   agentId: text("agent_id").notNull(),
   status: text("status").notNull(), // done, failed, etc.
   
+  // Direct columns for quick access
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  qualified: boolean("qualified"),
+  
   // Store everything in JSONB for flexibility
   rawData: jsonb("raw_data").notNull(), // Complete ElevenLabs API response
   extractedData: jsonb("extracted_data"), // Processed/extracted key fields

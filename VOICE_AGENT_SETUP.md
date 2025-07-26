@@ -39,8 +39,11 @@ DATABASE_URL=your_database_url_here
 Run the SQL migration to add the new call_records table:
 
 ```bash
-# Apply the migration
+# For new installations
 psql $DATABASE_URL -f database-migration.sql
+
+# If you already have a call_records table, run the update migration:
+psql $DATABASE_URL -f database-migration-update.sql
 ```
 
 ### 3. ElevenLabs Webhook Configuration
@@ -53,6 +56,22 @@ In your ElevenLabs dashboard:
 4. Add webhook signature secret (optional but recommended)
 
 ## 📊 Data Structure
+
+### Database Table Structure
+
+The `call_records` table uses a hybrid approach with both direct columns and JSONB storage:
+
+**Direct Columns (for fast queries):**
+- `first_name` TEXT - Caller's first name
+- `last_name` TEXT - Caller's last name  
+- `phone` TEXT - Phone number
+- `qualified` BOOLEAN - Qualification status
+
+**JSONB Storage:**
+- `raw_data` - Complete ElevenLabs API response
+- `extracted_data` - Processed qualification data
+
+This design provides both query performance and flexibility for future changes.
 
 ### Extracted Data Fields
 
@@ -87,41 +106,36 @@ Complete ElevenLabs API response stored in `raw_data` JSONB field includes:
 
 ## 🖥️ User Interface
 
-### Call Screener Dashboard
+### Call Records Data Table
 
-Access the screener at: `http://your-domain.com/screener`
+Access the data table at: `http://your-domain.com/screener`
 
 **Features:**
+- **Dynamic table structure** that adapts to your questions
+- **Compact view** (default): Shows caller ID, name, phone, question results, pass/fail
+- **Expanded view**: Detailed responses, analysis, call metrics, and raw data
 - **Real-time updates** every 5 seconds
-- **Agent-specific filtering** (only shows target agent calls)
-- **Search functionality** by name, phone, or conversation ID
-- **Qualification badges** with color-coded status
-- **Call metrics** including duration and cost
-- **Expandable raw data** view for debugging
+- **Server-side search** by name, phone, or conversation ID
+- **Pass/Fail determination** based on key qualifications
+- **Question auto-detection** from API response structure
 
-### Call Record Display
+### Data Table Structure
 
-Each call record shows:
+**Compact View Columns:**
+- **Caller ID** - Sequential database number (#1, #2, etc.)
+- **First Name** - Direct from database  
+- **Last Name** - Direct from database
+- **Phone Number** - Direct from database
+- **Question Columns** - Dynamic based on your API response (✅/❌ icons)
+- **Agent Result** - PASS/FAIL based on qualification logic
+- **Timestamp** - Call completion time
 
-#### Contact Information
-- Full name
-- Phone number
-- Interview schedule
-- Call timestamp
-
-#### Driver Qualifications
-- ✅ CDL-A License
-- ✅ 24+ Months Experience  
-- ✅ Hopper Experience
-- ✅ OTR Available
-- ✅ Clean Record
-- ✅ Work Eligible
-
-#### Call Metrics
-- Call duration
-- Call cost
-- Call status
-- Processing time
+**Expanded View Details:**
+- **Contact Info** - Name, phone, conversation ID
+- **Call Details** - Duration, cost, status  
+- **Schedule** - Interview scheduling information
+- **Question Responses** - Full text responses with AI analysis
+- **Raw API Data** - Complete ElevenLabs response (collapsible)
 
 ## 🔍 API Endpoints
 

@@ -32,7 +32,7 @@ export interface IStorage {
     rawData: any;
     extractedData?: any;
   }): Promise<CallRecord>;
-  getCallRecords(agentId?: string, limit?: number): Promise<CallRecord[]>;
+  getCallRecords(agentId?: string, limit?: number, search?: string): Promise<CallRecord[]>;
   getCallRecordByConversationId(conversationId: string): Promise<CallRecord | undefined>;
 }
 
@@ -284,6 +284,12 @@ export class DatabaseStorage implements IStorage {
       conversationId: callData.conversationId,
       agentId: callData.agentId,
       status: callData.status,
+      // Populate direct columns from extracted data
+      firstName: extractedData.firstName || null,
+      lastName: extractedData.lastName || null,
+      phone: extractedData.phoneNumber || null,
+      qualified: extractedData.qualified || null,
+      // Store complete data in JSONB
       rawData: callData.rawData,
       extractedData: extractedData
     };
@@ -318,11 +324,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCallRecords(agentId?: string, limit: number = 50): Promise<CallRecord[]> {
+  async getCallRecords(agentId?: string, limit: number = 50, search?: string): Promise<CallRecord[]> {
     let query = db.select().from(callRecords);
     
+    const conditions = [];
+    
     if (agentId) {
-      query = query.where(eq(callRecords.agentId, agentId));
+      conditions.push(eq(callRecords.agentId, agentId));
+    }
+    
+    if (search) {
+      conditions.push(or(
+        like(callRecords.firstName, `%${search}%`),
+        like(callRecords.lastName, `%${search}%`),
+        like(callRecords.phone, `%${search}%`),
+        like(callRecords.conversationId, `%${search}%`)
+      ));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions) as any);
     }
     
     return await query.orderBy(desc(callRecords.createdAt)).limit(limit);

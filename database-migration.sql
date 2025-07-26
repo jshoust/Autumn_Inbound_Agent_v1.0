@@ -6,6 +6,10 @@ CREATE TABLE IF NOT EXISTS call_records (
   conversation_id TEXT UNIQUE NOT NULL,
   agent_id TEXT NOT NULL,
   status TEXT NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  phone TEXT,
+  qualified BOOLEAN,
   raw_data JSONB NOT NULL,
   extracted_data JSONB,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
@@ -16,6 +20,10 @@ CREATE TABLE IF NOT EXISTS call_records (
 CREATE INDEX IF NOT EXISTS idx_call_records_agent_id ON call_records(agent_id);
 CREATE INDEX IF NOT EXISTS idx_call_records_created_at ON call_records(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_call_records_conversation_id ON call_records(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_call_records_first_name ON call_records(first_name);
+CREATE INDEX IF NOT EXISTS idx_call_records_last_name ON call_records(last_name);
+CREATE INDEX IF NOT EXISTS idx_call_records_phone ON call_records(phone);
+CREATE INDEX IF NOT EXISTS idx_call_records_qualified ON call_records(qualified);
 
 -- Create indexes on JSONB fields for faster queries
 CREATE INDEX IF NOT EXISTS idx_call_records_extracted_qualified ON call_records USING GIN ((extracted_data->'qualified'));
@@ -43,12 +51,15 @@ SELECT
   conversation_id,
   agent_id,
   status,
-  extracted_data->>'firstName' as first_name,
-  extracted_data->>'lastName' as last_name,
-  extracted_data->>'phoneNumber' as phone_number,
-  (extracted_data->>'qualified')::boolean as qualified,
+  first_name,
+  last_name,
+  phone,
+  qualified,
   (extracted_data->>'callDuration')::integer as call_duration,
   (extracted_data->>'callCost')::integer as call_cost,
+  (extracted_data->>'interviewSchedule') as interview_schedule,
+  (extracted_data->>'cdlA')::boolean as cdl_a,
+  (extracted_data->>'experience24Months')::boolean as experience_24_months,
   created_at,
   updated_at
 FROM call_records

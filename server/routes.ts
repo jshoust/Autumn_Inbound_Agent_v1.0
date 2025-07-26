@@ -270,11 +270,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get call records (new JSONB-based storage)
   app.get('/api/call-records', async (req, res) => {
     try {
-      const { agent_id, limit } = req.query;
+      const { agent_id, limit, search } = req.query;
       const agentId = agent_id as string || TARGET_AGENT_ID;
       const limitNum = limit ? parseInt(limit as string) : 50;
+      const searchTerm = search as string;
       
-      const callRecords = await storage.getCallRecords(agentId, limitNum);
+      const callRecords = await storage.getCallRecords(agentId, limitNum, searchTerm);
       res.json(callRecords);
     } catch (error) {
       console.error('Error fetching call records:', error);
