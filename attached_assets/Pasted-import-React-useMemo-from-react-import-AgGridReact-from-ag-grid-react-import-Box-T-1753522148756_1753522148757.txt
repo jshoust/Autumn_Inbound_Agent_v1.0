@@ -1,0 +1,90 @@
+import React, { useMemo } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { Box, Typography } from '@mui/material';
+import { Grid, IconButton, Tooltip } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// Helper: render check, x, or dash for Q columns
+function StatusIcon({ value }) {
+  if (value === true || value === 'true') {
+    return <span style={{ color: '#168821', fontSize: 22 }}>✔️</span>;
+  }
+  if (value === false || value === 'false') {
+    return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
+  }
+  return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
+}
+
+// Extract question order and metadata from one candidate
+function getQuestionsMeta(candidate) {
+  const results = candidate?.analysis?.data_collection_results || {};
+  // Filter for keys that are booleans (i.e. pass/fail questions)
+  const boolQuestions = Object.values(results)
+    .filter(item => typeof item.value === 'boolean' || item.value === 'true' || item.value === 'false')
+    .map((item, idx) => ({
+      key: item.data_collection_id,
+      label: `Q${idx + 1}`,
+      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || item.data_collection_id
+    }));
+  return boolQuestions;
+}
+
+// Main component
+export default function CandidatesAGGrid({ candidates }) {
+  // Defensive: if a single object passed, wrap as array
+  const candidateList = Array.isArray(candidates) ? candidates : [candidates];
+
+  // Figure out all unique question fields & order (from first candidate with any)
+  const questionMeta = useMemo(() => {
+    for (const cand of candidateList) {
+      const meta = getQuestionsMeta(cand);
+      if (meta.length > 0) return meta;
+    }
+    return [];
+  }, [candidateList]);
+
+  // Build rows: one per candidate
+  const rowData = candidateList.map((cand, idx) => {
+    const results = cand?.analysis?.data_collection_results || {};
+    const getField = (field) => {
+      const entry = results[field];
+      return entry ? entry.value : null;
+    };
+    return {
+      id: idx,
+      name: [getField('First_Name'), getField('Last_Name')].filter(Boolean).join(' '),
+      phone: getField('Phone_number'),
+      ...Object.fromEntries(
+        questionMeta.map(q => [q.label, getField(q.key)])
+      ),
+      _all: results, // For expansion panel
+      _meta: cand
+    };
+  });
+
+  // Build AG Grid columns
+  const columnDefs = [
+    { headerName: 'Name', field: 'name', minWidth: 160, pinned: 'left' },
+    { headerName: 'Phone', field: 'phone', minWidth: 140 },
+    ...questionMeta.map(q => ({
+      headerName: q.label,
+      field: q.label,
+      minWidth: 90,
+      maxWidth: 110,
+      cellRenderer: p => <StatusIcon value={p.value} />,
+      cellStyle: { textAlign: 'center' }
+    }))
+  ];
+
+  // Row detail renderer for expanded view
+  const detailCellRenderer = (props) => {
+    const { data } = props;
+    const allResults = data._all;
+    // Show each question with: label, actual answer, rationale
+    return (
+      <Box sx={{ p: 3, background: '#f9fafb', borderRadius: 2 }}>
+        <Typography variant="h6" gutterBottom>Candidate Details</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 2 }}>
+          Name: {data.name} &nbsp;&nbsp;|&nbsp
