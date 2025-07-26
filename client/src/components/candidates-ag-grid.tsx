@@ -194,122 +194,107 @@ export default function CandidatesAgGrid({
     });
   }, [candidates]);
 
-  // Column definitions
+  // Column definitions - single flat structure
   const columnDefs = useMemo(() => [
     {
-      headerName: 'Contact Information',
-      children: [
-        {
-          headerName: 'Name',
-          field: 'name',
-          minWidth: 150,
-          flex: 0.3,
-          pinned: 'left'
-        },
-        {
-          headerName: 'Phone',
-          field: 'phone',
-          minWidth: 120,
-          flex: 0.2
-        },
-        {
-          headerName: 'Call Time',
-          field: 'createdAt',
-          minWidth: 130,
-          flex: 0.2
-        }
-      ]
+      headerName: 'Name',
+      field: 'name',
+      minWidth: 150,
+      flex: 0.3,
+      pinned: 'left'
     },
     {
-      headerName: 'Qualification Questions',
-      children: [
-        {
-          headerName: 'Q1: CDL License',
-          field: 'q1_cdl',
-          minWidth: 120,
-          flex: 0.2,
-          cellRenderer: QuestionResponseRenderer
-        },
-        {
-          headerName: 'Q2: 24+ Months Experience',
-          field: 'q2_experience',
-          minWidth: 150,
-          flex: 0.2,
-          cellRenderer: QuestionResponseRenderer
-        },
-        {
-          headerName: 'Q3: Hopper Experience',
-          field: 'q3_hopper',
-          minWidth: 130,
-          flex: 0.2,
-          cellRenderer: QuestionResponseRenderer
-        },
-        {
-          headerName: 'Q4: OTR Available',
-          field: 'q4_otr',
-          minWidth: 120,
-          flex: 0.2,
-          cellRenderer: QuestionResponseRenderer
-        },
-        {
-          headerName: 'Q5: Clean Record',
-          field: 'q5_violations',
-          minWidth: 120,
-          flex: 0.2,
-          cellRenderer: (params: any) => {
-            const { value, response } = params.value || { value: null, response: '' };
-            // For violations, reverse the logic (false = good, true = bad)
-            const showCheck = value === false;
-            const showX = value === true;
-            
-            return (
-              <div className="flex items-center space-x-2">
-                <div className="flex-shrink-0">
-                  {showCheck ? (
-                    <Check className="w-4 h-4 text-green-600" />
-                  ) : showX ? (
-                    <X className="w-4 h-4 text-red-600" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-gray-400" />
-                  )}
-                </div>
-                <span className="text-sm text-slate-600 truncate">
-                  {response ? `"${response}"` : '-'}
-                </span>
-              </div>
-            );
-          }
-        },
-        {
-          headerName: 'Q6: Work Eligible',
-          field: 'q6_workAuth',
-          minWidth: 120,
-          flex: 0.2,
-          cellRenderer: QuestionResponseRenderer
-        }
-      ]
+      headerName: 'Phone',
+      field: 'phone',
+      minWidth: 120,
+      flex: 0.2
     },
     {
-      headerName: 'Status & Actions',
-      children: [
-        {
-          headerName: 'Qualification Status',
-          field: 'qualified',
-          minWidth: 130,
-          flex: 0.2,
-          cellRenderer: StatusBadgeRenderer
-        },
-        {
-          headerName: 'Actions',
-          field: 'actions',
-          minWidth: 150,
-          flex: 0.3,
-          cellRenderer: ActionsCellRenderer,
-          sortable: false,
-          filter: false,
-          pinned: 'right'
-        }
-      ]
+      headerName: 'Call Time',
+      field: 'createdAt',
+      minWidth: 130,
+      flex: 0.2
+    },
+    {
+      headerName: 'Q1: CDL License',
+      field: 'q1_cdl',
+      minWidth: 120,
+      flex: 0.2,
+      cellRenderer: QuestionResponseRenderer
+    },
+    {
+      headerName: 'Q2: 24+ Months Experience',
+      field: 'q2_experience',
+      minWidth: 150,
+      flex: 0.2,
+      cellRenderer: QuestionResponseRenderer
+    },
+    {
+      headerName: 'Q3: Hopper Experience',
+      field: 'q3_hopper',
+      minWidth: 130,
+      flex: 0.2,
+      cellRenderer: QuestionResponseRenderer
+    },
+    {
+      headerName: 'Q4: OTR Available',
+      field: 'q4_otr',
+      minWidth: 120,
+      flex: 0.2,
+      cellRenderer: QuestionResponseRenderer
+    },
+    {
+      headerName: 'Q5: Clean Record',
+      field: 'q5_violations',
+      minWidth: 120,
+      flex: 0.2,
+      cellRenderer: (params: any) => {
+        const { value, response } = params.value || { value: null, response: '' };
+        // For violations, reverse the logic (false = good, true = bad)
+        const showCheck = value === false;
+        const showX = value === true;
+        
+        return (
+          <div className="flex items-center space-x-2">
+            <div className="flex-shrink-0">
+              {showCheck ? (
+                <Check className="w-4 h-4 text-green-600" />
+              ) : showX ? (
+                <X className="w-4 h-4 text-red-600" />
+              ) : (
+                <Clock className="w-4 h-4 text-gray-400" />
+              )}
+            </div>
+            <span className="text-sm text-slate-600 truncate">
+              {response ? `"${response}"` : '-'}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      headerName: 'Q6: Work Eligible',
+      field: 'q6_workAuth',
+      minWidth: 120,
+      flex: 0.2,
+      cellRenderer: QuestionResponseRenderer
+    },
+    {
+      headerName: 'Qualification Status',
+      field: 'qualified',
+      minWidth: 130,
+      flex: 0.2,
+      cellRenderer: StatusBadgeRenderer
+    },
+    {
+      headerName: 'Actions',
+      field: 'actions',
+      minWidth: 150,
+      flex: 0.3,
+      cellRenderer: ActionsCellRenderer,
+      sortable: false,
+      filter: false,
+      pinned: 'right'
     }
   ], [qualifyMutation.isPending]);
 
@@ -397,11 +382,10 @@ export default function CandidatesAgGrid({
             wrapText: true,
             autoHeight: true
           }}
-          rowSelection={{ mode: 'multiRow', enableClickSelection: false }}
+          rowSelection={{ mode: 'multiRow', enableClickSelection: false, checkboxes: true, headerCheckbox: true }}
           onSelectionChanged={handleSelectionChanged}
           rowHeight={60}
-          headerHeight={60}
-          groupHeaderHeight={40}
+          headerHeight={50}
         />
       </div>
     </div>
