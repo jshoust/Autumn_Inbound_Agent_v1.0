@@ -201,7 +201,9 @@ export default function CandidatesAgGrid({
       field: 'name',
       minWidth: 150,
       flex: 0.3,
-      pinned: 'left'
+      pinned: 'left',
+      checkboxSelection: true,
+      headerCheckboxSelection: true
     },
     {
       headerName: 'Phone',
@@ -382,13 +384,8 @@ export default function CandidatesAgGrid({
             wrapText: true,
             autoHeight: true
           }}
-          rowSelection={{ 
-            mode: 'multiRow', 
-            enableClickSelection: false, 
-            checkboxes: true, 
-            headerCheckbox: true,
-            checkboxLocation: 'firstColumn'
-          }}
+          rowSelection="multiple"
+          suppressRowClickSelection={true}
           onSelectionChanged={handleSelectionChanged}
           rowHeight={60}
           headerHeight={50}
