@@ -238,8 +238,7 @@ export default function CandidatesAgGrid({
     { 
       headerName: 'Name', 
       field: 'name', 
-      minWidth: 160, 
-      pinned: 'left',
+      minWidth: 160,
       checkboxSelection: true,
       headerCheckboxSelection: true
     },
@@ -271,8 +270,7 @@ export default function CandidatesAgGrid({
         />
       ),
       sortable: false,
-      filter: false,
-      pinned: 'right'
+      filter: false
     }
   ], [questionMeta, qualifyMutation.isPending, onViewTranscript]);
 
