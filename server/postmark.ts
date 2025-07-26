@@ -244,7 +244,7 @@ export class PostmarkService {
   /**
    * Generate Excel file from call record data
    */
-  private generateExcelAttachment(callRecord: CallRecord): string {
+  generateExcelAttachment(callRecord: CallRecord): string {
     const workbook = XLSX.utils.book_new();
     
     // Extract data from JSONB fields
@@ -377,21 +377,57 @@ Complete call details are available in the attached Excel file.
 Generated at: ${new Date().toLocaleString()}
       `;
 
-      // Use the same email structure as the working sendTestEmail method
+      // First send the main notification email
       const response = await this.client.sendEmail({
         From: process.env.FROM_EMAIL || 'noreply@truckrecruit.pro',
         To: recipientEmail,
         Subject: subject,
         HtmlBody: htmlBody,
         TextBody: textBody,
-        Attachments: [{
-          Name: fileName,
-          Content: excelAttachment,
-          ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }],
         MessageStream: 'outbound',
         TrackOpens: true
       });
+
+      // Then send a follow-up email with Excel attachment
+      try {
+        const attachmentResponse = await this.client.sendEmail({
+          From: process.env.FROM_EMAIL || 'noreply@truckrecruit.pro',
+          To: recipientEmail,
+          Subject: `${subject} - Excel Report`,
+          HtmlBody: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h3>Candidate Details - Excel Report</h3>
+              <p>Please find the detailed candidate information in the attached Excel file.</p>
+              <p><strong>Candidate:</strong> ${candidateName}</p>
+              <p><strong>Status:</strong> ${status}</p>
+              <p><strong>Conversation ID:</strong> ${callRecord.conversationId}</p>
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px;">
+                This Excel file contains detailed call transcripts, Q&A responses, and qualification data.
+              </p>
+            </div>
+          `,
+          TextBody: `Candidate Details - Excel Report
+
+Candidate: ${candidateName}
+Status: ${status}
+Conversation ID: ${callRecord.conversationId}
+
+This Excel file contains detailed call transcripts, Q&A responses, and qualification data.`,
+          Attachments: [{
+            Name: fileName,
+            Content: excelAttachment,
+            ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          }],
+          MessageStream: 'outbound',
+          TrackOpens: true
+        });
+
+        console.log(`Excel attachment email sent to ${recipientEmail}, MessageID: ${attachmentResponse.MessageID}`);
+      } catch (attachmentError) {
+        console.error('Failed to send Excel attachment:', attachmentError);
+        // Don't fail the main operation if attachment fails
+      }
 
       console.log(`Candidate notification sent to ${recipientEmail}, MessageID: ${response.MessageID}`);
       

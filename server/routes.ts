@@ -990,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { conversationId } = req.params;
       
       // Find the call record
-      const callRecords = await storage.getCallRecords(conversationId, 10);
+      const callRecords = await storage.getCallRecords(undefined, 100);
       const callRecord = callRecords.find(record => record.conversationId === conversationId);
       
       if (!callRecord) {
@@ -999,7 +999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate Excel file using the same function
       const postmark = new PostmarkService();
-      const excelBase64 = (postmark as any).generateExcelAttachment(callRecord);
+      const excelBase64 = postmark.generateExcelAttachment(callRecord);
       const excelBuffer = Buffer.from(excelBase64, 'base64');
       
       // Set headers for file download
