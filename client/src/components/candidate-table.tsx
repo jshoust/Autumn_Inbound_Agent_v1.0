@@ -154,17 +154,47 @@ export default function CandidateTable({
       
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contact Info</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q1: CDL</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q2: Experience</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q3: Hopper</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q4: OTR</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q5: Violations</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q6: Work Auth</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Contact Information</th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>CDL</span>
+                  <span className="text-xs font-normal text-slate-500">Class A License</span>
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>Experience</span>
+                  <span className="text-xs font-normal text-slate-500">24+ Months</span>
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>Hopper</span>
+                  <span className="text-xs font-normal text-slate-500">Experience</span>
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>OTR</span>
+                  <span className="text-xs font-normal text-slate-500">Available</span>
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>Clean Record</span>
+                  <span className="text-xs font-normal text-slate-500">No Violations</span>
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-sm font-semibold text-slate-700">
+                <div className="flex flex-col items-center">
+                  <span>Work Auth</span>
+                  <span className="text-xs font-normal text-slate-500">Eligible</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Qualification</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
@@ -180,189 +210,140 @@ export default function CandidateTable({
                 const rawData = candidate.rawConversationData as any;
                 const dataCollection = rawData?.analysis?.data_collection_results || {};
                 
-                const getQuestionValue = (field: string) => dataCollection[field]?.value;
-                const getQuestionResponse = (field: string) => dataCollection[field]?.value || '';
+                // Define questions in correct order with proper field mapping
+                const questions = [
+                  { key: 'cdl', field: 'question_one', responseField: 'question_one_response' },
+                  { key: 'experience', field: 'Question_two', responseField: 'question_two_response' },
+                  { key: 'hopper', field: 'Question_three', responseField: 'question_three_response' },
+                  { key: 'otr', field: 'question_four', responseField: 'Question_four_response' },
+                  { key: 'violations', field: 'question_five', responseField: 'question_five_reponse' },
+                  { key: 'workAuth', field: 'question_six', responseField: 'question_six_response' }
+                ];
+                
+                const getQuestionData = (questionConfig: typeof questions[0]) => {
+                  const value = dataCollection[questionConfig.field]?.value;
+                  const response = dataCollection[questionConfig.responseField]?.value || '';
+                  return { value, response };
+                };
                 
                 return (
-                  <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={candidate.id} className="hover:bg-slate-50/50 transition-all duration-200 border-b border-slate-100">
                     {/* Contact Information */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center">
-                            <User className="text-slate-600 w-5 h-5" />
+                    <td className="px-6 py-5">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                            <User className="text-white w-6 h-6" />
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-slate-900">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-slate-900 truncate">
                             {candidate.firstName} {candidate.lastName}
                           </div>
-                          <div className="text-sm text-slate-500">{candidate.phone}</div>
-                          <div className="text-xs text-slate-400">
+                          <div className="text-sm text-slate-600 font-mono">{candidate.phone}</div>
+                          <div className="text-xs text-slate-500">
                             {formatCallTime(candidate.createdAt)}
                           </div>
                         </div>
                       </div>
                     </td>
                     
-                    {/* Q1: CDL */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('question_one') === true ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : getQuestionValue('question_one') === false ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_one_response')}>
-                          {getQuestionResponse('question_one_response') ? `"${getQuestionResponse('question_one_response')}"` : '-'}
-                        </div>
-                      </div>
-                    </td>
+                    {/* Dynamic Question Columns */}
+                    {questions.map((q, index) => {
+                      const { value, response } = getQuestionData(q);
+                      const isViolationsQuestion = q.key === 'violations';
+                      
+                      // For violations question, reverse the logic (true = bad, false = good)
+                      const showCheck = isViolationsQuestion ? value === false : value === true;
+                      const showX = isViolationsQuestion ? value === true : value === false;
+                      
+                      return (
+                        <td key={q.key} className="px-4 py-5 text-center">
+                          <div className="flex flex-col items-center space-y-2">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-slate-200">
+                              {showCheck ? (
+                                <Check className="w-5 h-5 text-green-600" />
+                              ) : showX ? (
+                                <X className="w-5 h-5 text-red-600" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-slate-400" />
+                              )}
+                            </div>
+                            {response && (
+                              <div className="max-w-24 text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border truncate" 
+                                   title={`"${response}"`}>
+                                "{response}"
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
                     
-                    {/* Q2: Experience */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('Question_two') === true ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : getQuestionValue('Question_two') === false ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
+                    {/* Qualification Status */}
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col space-y-2">
+                        <div>{getStatusBadge(candidate.qualified)}</div>
+                        {candidate.transcript && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors justify-start p-1 h-auto"
+                            onClick={() => onViewTranscript(candidate)}
+                          >
+                            <FileText className="w-3 h-3 mr-1" />
+                            View Details
+                          </Button>
                         )}
-                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_two_response')}>
-                          {getQuestionResponse('question_two_response') ? `"${getQuestionResponse('question_two_response')}"` : '-'}
-                        </div>
                       </div>
-                    </td>
-                    
-                    {/* Q3: Hopper */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('Question_three') === true ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : getQuestionValue('Question_three') === false ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_three_response')}>
-                          {getQuestionResponse('question_three_response') ? `"${getQuestionResponse('question_three_response')}"` : '-'}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Q4: OTR */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('question_four') === true ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : getQuestionValue('question_four') === false ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('Question_four_response')}>
-                          {getQuestionResponse('Question_four_response') ? `"${getQuestionResponse('Question_four_response')}"` : '-'}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Q5: Violations */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('question_five') === true ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : getQuestionValue('question_five') === false ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_five_reponse')}>
-                          {getQuestionResponse('question_five_reponse') ? `"${getQuestionResponse('question_five_reponse')}"` : '-'}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Q6: Work Auth */}
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex flex-col items-center space-y-1">
-                        {getQuestionValue('question_six') === true ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : getQuestionValue('question_six') === false ? (
-                          <X className="w-4 h-4 text-red-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <div className="text-xs text-slate-600 truncate max-w-20">
-                          {getQuestionValue('question_six') !== null ? (getQuestionValue('question_six') ? 'Yes' : 'No') : '-'}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Status */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(candidate.qualified)}
-                      {candidate.transcript && (
-                        <Button
-                          variant="link"
-                          className="text-sm text-primary hover:text-blue-700 transition-colors mt-1 p-0 h-auto block"
-                          onClick={() => onViewTranscript(candidate)}
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          View Details
-                        </Button>
-                      )}
                     </td>
                     
                     {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    {/* Only show manual override buttons for unprocessed (null) candidates */}
-                    {candidate.qualified === null ? (
-                      <>
-                        <Button
-                          size="sm"
-                          className="bg-success hover:bg-green-700 text-white"
-                          onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                          disabled={qualifyMutation.isPending}
-                        >
-                          <Check className="w-3 h-3 mr-1" />
-                          Qualify
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="bg-danger hover:bg-red-700"
-                          onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                          disabled={qualifyMutation.isPending}
-                        >
-                          <X className="w-3 h-3 mr-1" />
-                          Reject
-                        </Button>
-                      </>
-                    ) : (
-                      /* Show status and optional override for already processed candidates */
-                      <div className="flex items-center space-x-2">
-                        <div className="text-xs text-slate-500">
-                          {candidate.qualified ? 'Auto-qualified by Voice Agent' : 'Auto-rejected by Voice Agent'}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => qualifyMutation.mutate({ 
-                            id: candidate.id, 
-                            qualified: !candidate.qualified 
-                          })}
-                          disabled={qualifyMutation.isPending}
-                          className="text-xs"
-                        >
-                          Override
-                        </Button>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col space-y-2">
+                        {candidate.qualified === null ? (
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                              disabled={qualifyMutation.isPending}
+                            >
+                              <Check className="w-3 h-3 mr-1" />
+                              Qualify
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                              disabled={qualifyMutation.isPending}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col space-y-1">
+                            <div className="text-xs text-slate-500">
+                              {candidate.qualified ? 'Auto-qualified' : 'Auto-rejected'}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => qualifyMutation.mutate({ 
+                                id: candidate.id, 
+                                qualified: !candidate.qualified 
+                              })}
+                              disabled={qualifyMutation.isPending}
+                              className="text-xs"
+                            >
+                              Override
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
               ))
             )}
           </tbody>
