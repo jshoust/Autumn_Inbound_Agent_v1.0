@@ -382,7 +382,13 @@ export default function CandidatesAgGrid({
             wrapText: true,
             autoHeight: true
           }}
-          rowSelection={{ mode: 'multiRow', enableClickSelection: false, checkboxes: true, headerCheckbox: true }}
+          rowSelection={{ 
+            mode: 'multiRow', 
+            enableClickSelection: false, 
+            checkboxes: true, 
+            headerCheckbox: true,
+            checkboxLocation: 'firstColumn'
+          }}
           onSelectionChanged={handleSelectionChanged}
           rowHeight={60}
           headerHeight={50}
