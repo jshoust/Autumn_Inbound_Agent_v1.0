@@ -40,16 +40,16 @@ export default function Header() {
 
           {/* Agent Information */}
           {agentData && (
-            <div className="hidden md:flex items-center space-x-4 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-2 text-sm">
-                <User className="w-4 h-4 text-blue-600" />
+            <div className="hidden md:flex items-center space-x-2 bg-blue-50 px-2 py-1 rounded border border-blue-200">
+              <div className="flex items-center space-x-1 text-xs">
+                <User className="w-3 h-3 text-blue-600" />
                 <span className="font-medium text-blue-900">
                   {agentData.name}
                 </span>
               </div>
               {agentData.phone_number && (
-                <div className="flex items-center space-x-2 text-sm border-l border-blue-300 pl-4">
-                  <Phone className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center space-x-1 text-xs border-l border-blue-300 pl-2">
+                  <Phone className="w-3 h-3 text-blue-600" />
                   <span className="text-blue-800">
                     {agentData.phone_number}
                   </span>
