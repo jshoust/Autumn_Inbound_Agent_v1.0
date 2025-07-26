@@ -431,6 +431,90 @@ export class DatabaseStorage implements IStorage {
 
     return candidate;
   }
+
+  // Get call records by date range
+  async getCallRecordsByDateRange(startDate: Date, endDate: Date): Promise<CallRecord[]> {
+    return await db
+      .select()
+      .from(callRecords)
+      .where(and(
+        gte(callRecords.createdAt, startDate),
+        lte(callRecords.createdAt, endDate)
+      ))
+      .orderBy(desc(callRecords.createdAt));
+  }
+
+  async getEmailLogsByReportConfig(reportConfigId: number): Promise<EmailLog[]> {
+    return await db
+      .select()
+      .from(emailLogs)
+      .where(eq(emailLogs.reportConfigId, reportConfigId))
+      .orderBy(desc(emailLogs.sentAt));
+  }
+
+  // Report Configuration methods
+  async getReportConfigs(): Promise<ReportsConfig[]> {
+    return await db.select().from(reportsConfig).orderBy(desc(reportsConfig.createdAt));
+  }
+
+  async getReportConfig(id: number): Promise<ReportsConfig | undefined> {
+    const [config] = await db.select().from(reportsConfig).where(eq(reportsConfig.id, id));
+    return config || undefined;
+  }
+
+  async createReportConfig(insertConfig: InsertReportsConfig): Promise<ReportsConfig> {
+    const [config] = await db
+      .insert(reportsConfig)
+      .values(insertConfig)
+      .returning();
+    return config;
+  }
+
+  async updateReportConfig(id: number, updateConfig: UpdateReportsConfig): Promise<ReportsConfig | undefined> {
+    const [config] = await db
+      .update(reportsConfig)
+      .set({ ...updateConfig, updatedAt: new Date() })
+      .where(eq(reportsConfig.id, id))
+      .returning();
+    return config || undefined;
+  }
+
+  async deleteReportConfig(id: number): Promise<boolean> {
+    const result = await db.delete(reportsConfig).where(eq(reportsConfig.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getScheduledReports(): Promise<ReportsConfig[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(reportsConfig)
+      .where(and(
+        eq(reportsConfig.enabled, true),
+        or(
+          isNull(reportsConfig.nextSendAt),
+          lte(reportsConfig.nextSendAt, now)
+        )
+      ))
+      .orderBy(reportsConfig.nextSendAt);
+  }
+
+  // Email Log methods
+  async logEmailSent(emailData: InsertEmailLog): Promise<EmailLog> {
+    const [log] = await db
+      .insert(emailLogs)
+      .values(emailData)
+      .returning();
+    return log;
+  }
+
+  async getEmailLogs(limit: number = 100): Promise<EmailLog[]> {
+    return await db
+      .select()
+      .from(emailLogs)
+      .orderBy(desc(emailLogs.sentAt))
+      .limit(limit);
+  }
 }
 
 // Helper function to extract key data from ElevenLabs API response
@@ -509,117 +593,6 @@ function extractKeyData(apiResponse: any) {
       schedule: scheduleResponse
     }
   };
-}
-
-  // Get call records by date range
-  async getCallRecordsByDateRange(startDate: Date, endDate: Date): Promise<CallRecord[]> {
-    return await db
-      .select()
-      .from(callRecords)
-      .where(and(
-        gte(callRecords.createdAt, startDate),
-        lte(callRecords.createdAt, endDate)
-      ))
-      .orderBy(desc(callRecords.createdAt));
-  }
-
-  // Store candidate from call (for backward compatibility)
-  async storeCandidateFromCall(conversationId: string, agentId: string, fullConversationData: any): Promise<Candidate> {
-    const extractedData = extractKeyData(fullConversationData);
-    
-    const candidateData: InsertCandidate = {
-      conversationId,
-      agentId,
-      firstName: extractedData.firstName,
-      lastName: extractedData.lastName,
-      phone: extractedData.phoneNumber,
-      hasCdlA: extractedData.cdlA,
-      hasExperience: extractedData.experience24Months,
-      hasViolations: !extractedData.cleanRecord,
-      hasWorkAuth: extractedData.workEligible,
-      interviewSchedule: extractedData.interviewSchedule,
-      callDuration: extractedData.callDuration,
-      callStatus: extractedData.callSuccessful ? 'success' : 'failed',
-      transcript: fullConversationData.transcript,
-      dataCollection: fullConversationData.analysis?.data_collection_results,
-      rawConversationData: fullConversationData,
-      qualified: extractedData.qualified,
-    };
-
-    return await this.createCandidate(candidateData);
-  }
-
-  // Report Configuration methods
-  async getReportConfigs(): Promise<ReportsConfig[]> {
-    return await db.select().from(reportsConfig).orderBy(desc(reportsConfig.createdAt));
-  }
-
-  async getReportConfig(id: number): Promise<ReportsConfig | undefined> {
-    const [config] = await db.select().from(reportsConfig).where(eq(reportsConfig.id, id));
-    return config || undefined;
-  }
-
-  async createReportConfig(insertConfig: InsertReportsConfig): Promise<ReportsConfig> {
-    const [config] = await db
-      .insert(reportsConfig)
-      .values(insertConfig)
-      .returning();
-    return config;
-  }
-
-  async updateReportConfig(id: number, updateConfig: UpdateReportsConfig): Promise<ReportsConfig | undefined> {
-    const [config] = await db
-      .update(reportsConfig)
-      .set({ ...updateConfig, updatedAt: new Date() })
-      .where(eq(reportsConfig.id, id))
-      .returning();
-    return config || undefined;
-  }
-
-  async deleteReportConfig(id: number): Promise<boolean> {
-    const result = await db.delete(reportsConfig).where(eq(reportsConfig.id, id));
-    return result.rowCount > 0;
-  }
-
-  async getScheduledReports(): Promise<ReportsConfig[]> {
-    const now = new Date();
-    return await db
-      .select()
-      .from(reportsConfig)
-      .where(and(
-        eq(reportsConfig.enabled, true),
-        or(
-          isNull(reportsConfig.nextSendAt),
-          lte(reportsConfig.nextSendAt, now)
-        )
-      ))
-      .orderBy(reportsConfig.nextSendAt);
-  }
-
-  // Email Log methods
-  async logEmailSent(emailData: InsertEmailLog): Promise<EmailLog> {
-    const [log] = await db
-      .insert(emailLogs)
-      .values(emailData)
-      .returning();
-    return log;
-  }
-
-  async getEmailLogs(limit: number = 100): Promise<EmailLog[]> {
-    return await db
-      .select()
-      .from(emailLogs)
-      .orderBy(desc(emailLogs.sentAt))
-      .limit(limit);
-  }
-
-  async getEmailLogsByReportConfig(reportConfigId: number): Promise<EmailLog[]> {
-    return await db
-      .select()
-      .from(emailLogs)
-      .where(eq(emailLogs.reportConfigId, reportConfigId))
-      .orderBy(desc(emailLogs.sentAt));
-  }
 }
 
 export const storage = new DatabaseStorage();
