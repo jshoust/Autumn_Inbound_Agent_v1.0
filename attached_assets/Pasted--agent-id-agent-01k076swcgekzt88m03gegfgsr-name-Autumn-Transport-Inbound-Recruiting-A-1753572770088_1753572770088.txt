@@ -1,0 +1,426 @@
+{
+  "agent_id": "agent_01k076swcgekzt88m03gegfgsr",
+  "name": "Autumn Transport Inbound Recruiting Agent",
+  "conversation_config": {
+    "asr": {
+      "quality": "high",
+      "provider": "elevenlabs",
+      "user_input_audio_format": "pcm_16000",
+      "keywords": []
+    },
+    "turn": {
+      "turn_timeout": 7,
+      "silence_end_call_timeout": -1,
+      "mode": "turn"
+    },
+    "tts": {
+      "model_id": "eleven_flash_v2",
+      "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+      "supported_voices": [],
+      "agent_output_audio_format": "pcm_16000",
+      "optimize_streaming_latency": 3,
+      "stability": 0.5,
+      "speed": 1,
+      "similarity_boost": 0.8,
+      "pronunciation_dictionary_locators": []
+    },
+    "conversation": {
+      "text_only": false,
+      "max_duration_seconds": 600,
+      "client_events": [
+        "audio",
+        "interruption"
+      ]
+    },
+    "language_presets": {
+      "es": {
+        "overrides": {
+          "tts": null,
+          "conversation": null,
+          "agent": {
+            "first_message": "¡Hola! Soy Alex, tu reclutador virtual para Autumn Transport.",
+            "language": null,
+            "prompt": null
+          }
+        },
+        "first_message_translation": {
+          "source_hash": "{\"firstMessage\":\"Hello there!  This is Alex, your virtual recruiter for Autumn Transport.  \",\"language\":\"en\"}",
+          "text": "¡Hola! Soy Alex, tu reclutador virtual para Autumn Transport."
+        }
+      }
+    },
+    "agent": {
+      "first_message": "Hello there!  This is Alex, your virtual recruiter for Autumn Transport.  Thank you for calling.  When you're ready, let me know if I can ask you a few questions before moving on to our live recruiters.\n\nIs that OK?",
+      "language": "en",
+      "dynamic_variables": {
+        "dynamic_variable_placeholders": {
+          "applicant_name": "applicant"
+        }
+      },
+      "prompt": {
+        "prompt": "Absolutely! Here’s your configuration revised for an inbound agent (where drivers call in and are greeted by Alex, your friendly and efficient recruiting assistant).\nAll details and flow are adapted for an inbound context, preserving your structure, tone, and qualification logic.\n\n⸻\n\nPersonality\n\nYou are Alex, a friendly and efficient recruiting assistant for Autumn Transport.\nYou are professional, organized, and persuasive.\nYou quickly assess candidate qualifications and clearly communicate the benefits of working for the company.\nYou are reliable and persistent, following up to schedule interviews.\n\nEnvironment\n\nYou are answering inbound phone calls from potential job applicants, and you will use their name {{applicant_name}} when available.\nYou have access to applicant information, including resumes and contact details, if they have provided them, or will gather information during the call.\nThe applicants are likely busy and may be calling during a break or in between jobs.\n{{system__called_number}} is your number, and {{system__caller_id}} is the applicant’s phone number.\n\nTone\n\nYour responses are enthusiastic, professional, and concise.\nYou speak clearly and confidently, conveying the value proposition of the job opportunity.\nYou use a friendly and approachable tone to build rapport with candidates.\nYou are respectful of their time and offer flexible scheduling options.\n\nGoal\n\nYour primary goal is to schedule qualified applicants for phone or in-person interviews by:\n\t1.\tIntroduction:\n\t•\tIntroduce yourself as Alex from Autumn Transport.\n\t•\tWelcome the caller and clearly state the purpose of the call: to discuss a job opportunity.\nScript:\n      \"Great, let's get started.\"\n\n    2. Caller Information\n\n      1.  \"Can I start with your first name please?\" \n           [Pause until the caller answers, then repeat back for confirmation]\n      2.  \"Great, can I now get your last name, please?\"\n            [Pause until the caller answers then repeat back for confirmation]\n      3.  \"And lastly, can I get your phone number with area code?\"\n            [Pause until the caller answers then repeat back for confirmation]\n\nWhen all is ok, proceed to the next section.\n\n\"OK, let's get started on the qualifying questions!\"\n\n\t3.\tQualification Assessment:\n\n\t•\tPlease ask the following questions if the caller agrees to proceed:\n\nQuestion 1:\n\n“First, do you currently have a valid Class A commercial driver’s license?”\n\nAnswer needs to be Yes or similar to qualify.\n\nQuestion 2:\n\n“Thank you! Next, do you have at least 24 months of experience driving a tractor-trailer?”\n\nAnswer needs to be Yes or similar to qualify.\n\nQuestion 3:\n\n\"Regarding your driving experience, do you have verifiable experience with hoppers?\"\n\nAnswer needs to be Yes or similar to qualify.\n\nQuestion 4:\n\n\"\"Are you able to be over the road for 3 weeks at a time?\"\n\nQuestion 5:\n\n\"Have you had a serious traffic violation in the last 3 years, this would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\"\n\nIf the answer is Yes to any part of the question, then they do not qualify.\n\nQuestion 6:\n\n“And finally, are you legally eligible to work in the United States?”\n\nAnswer needs to be Yes or similar to qualify.\n\n\t•\tIf any qualifiers do not meet the requirements, thank them for their time and let them know they do not qualify for the position.\n\nDisqualification Script:\n\n“Thank you for your time and for sharing that information.  At this time, it looks like you do not meet the minimum requirements for this position.  We appreciate your interest in Autumn Transport, and we wish you the best in your job search.”\n\n\t4.\tCall to Action:\n\n\t•\tIf the caller is qualified:\n\n“Based on your responses, you meet our initial qualifications. I’d love to schedule a phone interview so you can learn more about the benefits of joining Autumn Transport. \n\nWhat’s the best day and time for us to schedule your interview? Just let me know your availability and I’ll make sure a recruiter follows up with you promptly.”\n\n\t•\tIf the caller is not interested, politely thank them for their time and end the call.\n\nThank the caller for taking the time, and let them know if they've qualified, that someone will follow up.\n\nGuardrails:\n\n\t•\tDo not make any promises or guarantees about employment.\n\t•\tDo not ask for any sensitive personal information, such as social security numbers or bank  \n          account details.\n\t•\tDo not engage in any discriminatory or biased behaviour.\n\t•\tIf the caller is not interested, politely thank them for their time and end the call.\n\t•\tIf you are unsure about an answer, politely state that you will find out and get back to them.      \n\t•\tThe caller may ask for dates and times for callbacks, you do not allow call backs to be booked between the hours of 18:00 and 9:00 and you konw this by looking at {{system__timezone}} and {{system__time}}\n    •\tThe caller also cannot ask for dates beyond one week from today, so if today is Tuesday July 15th,2025, they cannot ask for a time past next Tuesday July 21st, 2025\n\nTools\n\nNone at this time.\n\n",
+        "llm": "gemini-2.5-flash",
+        "temperature": 0.15,
+        "max_tokens": -1,
+        "tool_ids": [],
+        "built_in_tools": {
+          "end_call": {
+            "name": "end_call",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "end_call"
+            }
+          },
+          "language_detection": {
+            "name": "language_detection",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "language_detection"
+            }
+          },
+          "transfer_to_agent": null,
+          "transfer_to_number": null,
+          "skip_turn": {
+            "name": "skip_turn",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "skip_turn"
+            }
+          },
+          "play_keypad_touch_tone": null,
+          "voicemail_detection": null
+        },
+        "mcp_server_ids": [],
+        "native_mcp_server_ids": [],
+        "knowledge_base": [],
+        "custom_llm": null,
+        "ignore_default_personality": false,
+        "rag": {
+          "enabled": false,
+          "embedding_model": "e5_mistral_7b_instruct",
+          "max_vector_distance": 0.6,
+          "max_documents_length": 50000,
+          "max_retrieved_rag_chunks_count": 20
+        },
+        "timezone": "America/Chicago",
+        "tools": [
+          {
+            "name": "end_call",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "end_call"
+            }
+          },
+          {
+            "name": "language_detection",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "language_detection"
+            }
+          },
+          {
+            "name": "skip_turn",
+            "description": "",
+            "response_timeout_secs": 20,
+            "assignments": [],
+            "type": "system",
+            "params": {
+              "system_tool_type": "skip_turn"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "created_at_unix_secs": 1752588678
+  },
+  "platform_settings": {
+    "auth": {
+      "enable_auth": false,
+      "allowlist": [],
+      "shareable_token": null
+    },
+    "evaluation": {
+      "criteria": []
+    },
+    "widget": {
+      "variant": "full",
+      "placement": "bottom-right",
+      "expandable": "never",
+      "avatar": {
+        "type": "orb",
+        "color_1": "#2792dc",
+        "color_2": "#9ce6e6"
+      },
+      "feedback_mode": "during",
+      "bg_color": "#ffffff",
+      "text_color": "#000000",
+      "btn_color": "#000000",
+      "btn_text_color": "#ffffff",
+      "border_color": "#e1e1e1",
+      "focus_color": "#000000",
+      "border_radius": null,
+      "btn_radius": null,
+      "action_text": null,
+      "start_call_text": null,
+      "end_call_text": null,
+      "expand_text": null,
+      "listening_text": null,
+      "speaking_text": null,
+      "shareable_page_text": null,
+      "shareable_page_show_terms": true,
+      "terms_text": "#### Terms and conditions\n\nBy clicking \"Agree,\" and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as described in the Privacy Policy.\nIf you do not wish to have your conversations recorded, please refrain from using this service.",
+      "terms_html": "<h4>Terms and conditions</h4>\n<p>By clicking &quot;Agree,&quot; and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as described in the Privacy Policy.\nIf you do not wish to have your conversations recorded, please refrain from using this service.</p>\n",
+      "terms_key": null,
+      "show_avatar_when_collapsed": false,
+      "disable_banner": false,
+      "override_link": null,
+      "mic_muting_enabled": false,
+      "transcript_enabled": false,
+      "text_input_enabled": true,
+      "text_contents": {
+        "main_label": null,
+        "start_call": null,
+        "start_chat": null,
+        "new_call": null,
+        "end_call": null,
+        "mute_microphone": null,
+        "change_language": null,
+        "collapse": null,
+        "expand": null,
+        "copied": null,
+        "accept_terms": null,
+        "dismiss_terms": null,
+        "listening_status": null,
+        "speaking_status": null,
+        "connecting_status": null,
+        "chatting_status": null,
+        "input_label": null,
+        "input_placeholder": null,
+        "input_placeholder_text_only": null,
+        "input_placeholder_new_conversation": null,
+        "user_ended_conversation": null,
+        "agent_ended_conversation": null,
+        "conversation_id": null,
+        "error_occurred": null,
+        "copy_id": null
+      },
+      "styles": {
+        "base": null,
+        "base_hover": null,
+        "base_active": null,
+        "base_border": null,
+        "base_subtle": null,
+        "base_primary": null,
+        "base_error": null,
+        "accent": null,
+        "accent_hover": null,
+        "accent_active": null,
+        "accent_border": null,
+        "accent_subtle": null,
+        "accent_primary": null,
+        "overlay_padding": null,
+        "button_radius": null,
+        "input_radius": null,
+        "bubble_radius": null,
+        "sheet_radius": null,
+        "compact_sheet_radius": null,
+        "dropdown_sheet_radius": null
+      },
+      "language_selector": false,
+      "supports_text_only": true,
+      "custom_avatar_path": null,
+      "language_presets": {}
+    },
+    "data_collection": {
+      "Question_two": {
+        "type": "boolean",
+        "description": "Please analyze the call to get a TRUE or FALSE to the following question.\n\n\"Do you have at least 24 months of experience driving a tractor-trailer?”\n",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "Question_three": {
+        "type": "boolean",
+        "description": "Please analyze the call to get a true or false to the following question:\n\n\"Regarding your driving experience, do you have verifiable experience with hoppers?\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_four": {
+        "type": "boolean",
+        "description": "Pleae analyze the call to get a true or false to the following question:\n\n\"\"Are you able to be over the road for 3 weeks at a time?\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_one": {
+        "type": "boolean",
+        "description": "Please analyze the call to get a TRUE or FALSE to the following question.  If they answer yes or similar to the question, then the boolean is set to TRUE.\n\n\"Do you currently have a valid Class A commercial driver’s license?”",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "Question_four_response": {
+        "type": "string",
+        "description": "Please analyze the call to get the full response to the following question:\n\n\"Are you able to be over the road for 3 weeks at a time?\"\n",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_one_response": {
+        "type": "string",
+        "description": "Please analyze the call to extract the full response to:\n\n\"Do you currently have a valid Class A commercial driver’s license?”",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "schedule": {
+        "type": "string",
+        "description": "Please retrieve the date and time that the caller wished to be interviewed.  Do your best to calculate the actual date and time.  For example if they say \"tomorrow at 3 pM\" , you would look up the current date in Central Time in the USA and put in \"July 16, 3PM for example\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_three_response": {
+        "type": "string",
+        "description": "Please analyze the call to get the full response to the question:\n\n\"Do you have verifiable experience with hoppers?\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "Last_Name": {
+        "type": "string",
+        "description": "Please retrieve the callers last name.",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "First_Name": {
+        "type": "string",
+        "description": "Please retrieve the callers first name.",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_five": {
+        "type": "boolean",
+        "description": "Please analyze the response as a whole and determine if any one of the questions is a yes, and if so, then set the answer to FALSE:\n\n\"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "Phone_number": {
+        "type": "string",
+        "description": "Please analyze the call to retrieve the callers phone number in numeric string format like \"111-111-1111\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_five_reponse": {
+        "type": "string",
+        "description": "Please analyse the call to get the full response to the following questions.  Separate the answers by a comma if they give more than one or an explanation:\n\n\"Have you had a serious traffic violation in the last 3 years? This would include a careless or reckless driving ticket, unsafe lane change, speeding 15 or greater, hit & run or following too closely?\"",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_two_response": {
+        "type": "string",
+        "description": "Please analyze the call to extract the actual response to:\n\n\"do you have at least 24 months of experience driving a tractor-trailer?”",
+        "dynamic_variable": "",
+        "constant_value": ""
+      },
+      "question_six": {
+        "type": "boolean",
+        "description": "Please analyze the call to get a TRUE or FALSE to the following question:\n\n“And finally, are you legally eligible to work in the United States?”",
+        "dynamic_variable": "",
+        "constant_value": ""
+      }
+    },
+    "overrides": {
+      "conversation_config_override": {
+        "tts": {
+          "voice_id": false
+        },
+        "conversation": {
+          "text_only": false
+        },
+        "agent": {
+          "first_message": false,
+          "language": true,
+          "prompt": {
+            "prompt": false
+          }
+        }
+      },
+      "custom_llm_extra_body": false,
+      "enable_conversation_initiation_client_data_from_webhook": false
+    },
+    "call_limits": {
+      "agent_concurrency_limit": -1,
+      "daily_limit": 100000,
+      "bursting_enabled": true
+    },
+    "ban": null,
+    "privacy": {
+      "record_voice": true,
+      "retention_days": -1,
+      "delete_transcript_and_pii": false,
+      "delete_audio": false,
+      "apply_to_existing_conversations": false,
+      "zero_retention_mode": false
+    },
+    "workspace_overrides": {
+      "conversation_initiation_client_data_webhook": null,
+      "webhooks": {
+        "post_call_webhook_id": "5c4067b548b34506b12afcc38f8d6676",
+        "send_audio": true
+      }
+    },
+    "testing": {
+      "test_ids": []
+    },
+    "safety": {
+      "is_blocked_ivc": false,
+      "is_blocked_non_ivc": false,
+      "ignore_safety_evaluation": false
+    }
+  },
+  "phone_numbers": [
+    {
+      "phone_number": "+15075981166",
+      "label": "Autumn_transport",
+      "supports_inbound": true,
+      "supports_outbound": true,
+      "phone_number_id": "phnum_01k079465yf6gaprtzj9fqk1jh",
+      "assigned_agent": {
+        "agent_id": "agent_01k076swcgekzt88m03gegfgsr",
+        "agent_name": "Autumn Transport Inbound Recruiting Agent"
+      },
+      "provider": "twilio"
+    }
+  ],
+  "workflow": {
+    "enabled": false,
+    "edges": {},
+    "nodes": {
+      "start_node": {
+        "type": "start",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    }
+  },
+  "access_info": {
+    "is_creator": true,
+    "creator_name": "John",
+    "creator_email": "info@neurovista.ai",
+    "role": "admin"
+  },
+  "tags": []
+}

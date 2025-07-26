@@ -46,9 +46,15 @@ export class ElevenLabsService {
       console.log(`Fetching agent details for ${agentId}...`);
       const data = await this.makeRequest(`/convai/agents/${agentId}`);
       console.log(`Retrieved agent details: ${data.name}`);
-      console.log(`Phone number: ${data.phone_number || data.telephony?.phone_number || 'No phone number found'}`);
-      console.log('Full agent response:', JSON.stringify(data, null, 2));
-      return data;
+      
+      // Extract phone number from phone_numbers array
+      const phoneNumber = data.phone_numbers?.[0]?.phone_number || null;
+      console.log(`Phone number: ${phoneNumber}`);
+      
+      return {
+        ...data,
+        phone_number: phoneNumber // Add phone_number to top level for easy access
+      };
     } catch (error) {
       console.error('Failed to fetch agent details:', error);
       throw error;

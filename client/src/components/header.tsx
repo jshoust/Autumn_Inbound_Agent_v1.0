@@ -12,12 +12,9 @@ export default function Header() {
   const { data: agentData } = useQuery<{
     name: string;
     phone_number?: string;
-    telephony?: {
-      phone_number?: string;
-    };
   }>({
     queryKey: ['/api/elevenlabs/agents/agent_01k076swcgekzt88m03gegfgsr'],
-    staleTime: 0, // Force fresh API call to see phone number
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
   });
 
   return (
@@ -50,11 +47,11 @@ export default function Header() {
                   {agentData.name}
                 </span>
               </div>
-              {(agentData.phone_number || agentData.telephony?.phone_number) && (
+              {agentData.phone_number && (
                 <div className="flex items-center space-x-2 text-sm border-l border-blue-300 pl-4">
                   <Phone className="w-4 h-4 text-blue-600" />
                   <span className="text-blue-800">
-                    {agentData.phone_number || agentData.telephony?.phone_number}
+                    {agentData.phone_number}
                   </span>
                 </div>
               )}
