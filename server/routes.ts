@@ -212,13 +212,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Fetching full conversation details from ElevenLabs API...');
       const fullConversationData = await elevenLabsService.getConversationDetails(conversation_id);
       
-      // STEP 3: Store in new call records table with JSONB
+      // STEP 3: Store in both call records and candidates tables
       const callRecord = await storage.storeCallRecord({
         conversationId: conversation_id,
         agentId: agent_id,
         status: fullConversationData.status || 'completed',
         rawData: fullConversationData
       });
+      
+      // Also create candidate record for UI
+      const candidate = await storage.storeCandidateFromCall(conversation_id, agent_id, fullConversationData);
       
       console.log('=== CALL RECORD STORED ===');
       console.log('Call Record ID:', callRecord.id);

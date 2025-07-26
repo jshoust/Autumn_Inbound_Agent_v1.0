@@ -353,6 +353,69 @@ export class DatabaseStorage implements IStorage {
     const [callRecord] = await db.select().from(callRecords).where(eq(callRecords.conversationId, conversationId));
     return callRecord || undefined;
   }
+
+  async storeCandidateFromCall(conversationId: string, agentId: string, apiResponse: any): Promise<Candidate> {
+    const extractedData = extractKeyData(apiResponse);
+    
+    console.log('Creating candidate from call:', {
+      conversationId,
+      agentId,
+      extractedName: `${extractedData.firstName} ${extractedData.lastName}`,
+      qualified: extractedData.qualified
+    });
+    
+    const [candidate] = await db
+      .insert(candidates)
+      .values({
+        conversationId,
+        callId: conversationId,
+        agentId,
+        firstName: extractedData.firstName,
+        lastName: extractedData.lastName,
+        phone: extractedData.phoneNumber,
+        hasCdlA: extractedData.cdlA,
+        hasExperience: extractedData.experience24Months,
+        hasViolations: false,
+        hasWorkAuth: extractedData.workEligible,
+        callDuration: extractedData.callDuration,
+        callStatus: extractedData.callSuccessful ? 'success' : 'failed',
+        transcript: apiResponse.transcript,
+        rawConversationData: apiResponse,
+        qualified: extractedData.qualified,
+        messageCount: apiResponse.transcript?.length || 0
+      })
+      .onConflictDoUpdate({
+        target: candidates.conversationId,
+        set: {
+          firstName: extractedData.firstName,
+          lastName: extractedData.lastName,
+          phone: extractedData.phoneNumber,
+          hasCdlA: extractedData.cdlA,
+          hasExperience: extractedData.experience24Months,
+          hasViolations: false,
+          hasWorkAuth: extractedData.workEligible,
+          callDuration: extractedData.callDuration,
+          callStatus: extractedData.callSuccessful ? 'success' : 'failed',
+          transcript: apiResponse.transcript,
+          rawConversationData: apiResponse,
+          qualified: extractedData.qualified,
+          messageCount: apiResponse.transcript?.length || 0,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+
+    console.log('=== CANDIDATE CREATED ===');
+    console.log('Candidate ID:', candidate.id);
+    console.log('Name:', `${candidate.firstName} ${candidate.lastName}`);
+    console.log('Phone:', candidate.phone);
+    console.log('CDL:', candidate.hasCdlA);
+    console.log('Experience:', candidate.hasExperience);
+    console.log('Qualified:', candidate.qualified);
+    console.log('=== END CANDIDATE CREATION ===');
+
+    return candidate;
+  }
 }
 
 // Helper function to extract key data from ElevenLabs API response
