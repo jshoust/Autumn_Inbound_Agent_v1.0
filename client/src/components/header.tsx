@@ -9,7 +9,10 @@ export default function Header() {
   const [location] = useLocation();
   
   // Fetch agent details
-  const { data: agentData } = useQuery({
+  const { data: agentData } = useQuery<{
+    name: string;
+    phone_number?: string;
+  }>({
     queryKey: ['/api/elevenlabs/agents/agent_01k076swcgekzt88m03gegfgsr'],
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes
   });
@@ -41,7 +44,7 @@ export default function Header() {
               <div className="flex items-center space-x-2 text-sm">
                 <User className="w-4 h-4 text-blue-600" />
                 <span className="font-medium text-blue-900">
-                  {agentData.name || 'Voice Agent'}
+                  {agentData.name}
                 </span>
               </div>
               {agentData.phone_number && (
