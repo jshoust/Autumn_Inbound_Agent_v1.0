@@ -104,7 +104,8 @@ export async function loginHandler(req: Request, res: Response) {
     const token = generateToken({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      role: user.role
     });
 
     res.json({
@@ -112,7 +113,8 @@ export async function loginHandler(req: Request, res: Response) {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
@@ -149,7 +151,8 @@ export async function registerHandler(req: Request, res: Response) {
     const token = generateToken({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      role: user.role
     });
 
     res.status(201).json({
@@ -157,7 +160,8 @@ export async function registerHandler(req: Request, res: Response) {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
@@ -182,7 +186,8 @@ export async function getCurrentUser(req: AuthRequest, res: Response) {
     res.json({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      role: user.role
     });
   } catch (error) {
     console.error('Get current user error:', error);
