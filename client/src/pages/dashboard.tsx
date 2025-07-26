@@ -238,16 +238,38 @@ export default function Dashboard() {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const { data: callRecords = [], isLoading, error, refetch } = useQuery<CallRecord[]>({
-    queryKey: ['/api/call-records', searchTerm],
+    queryKey: ['/api/candidates', searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      const response = await fetch(`/api/call-records?${params.toString()}`);
+      const response = await fetch(`/api/candidates?${params.toString()}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch call records: ${response.status}`);
+        throw new Error(`Failed to fetch candidates: ${response.status}`);
       }
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      
+      // Convert candidates data to CallRecord format
+      return Array.isArray(data) ? data.map((candidate: any) => ({
+        id: candidate.id,
+        conversationId: candidate.conversationId || candidate.callId,
+        agentId: candidate.agentId,
+        status: candidate.callStatus || 'completed',
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        phone: candidate.phone,
+        qualified: candidate.qualified,
+        rawData: candidate.rawConversationData || { 
+          analysis: { 
+            data_collection_results: candidate.dataCollection || {} 
+          },
+          metadata: {
+            call_duration_secs: candidate.callDuration,
+            cost: 0
+          }
+        },
+        extractedData: candidate.dataCollection || {},
+        createdAt: candidate.createdAt
+      })) : [];
     },
     refetchInterval: 5000, // Poll every 5 seconds
   });
@@ -285,7 +307,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-red-600">Error loading call records: {error.message}</div>
+        <div className="text-lg text-red-600">Error loading data: {error.message}</div>
       </div>
     );
   }
@@ -300,7 +322,7 @@ export default function Dashboard() {
                 <div>
                   <CardTitle>Call Records Data Table</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Agent: agent_01k076swcgekzt88m03gegfgsr | {safeCallRecords.length} records
+                    Agent: agent_01k076swcgekzt88m03gegfgsr | {safeCallRecords.length} records (from candidates table)
                   </p>
                 </div>
                 <div className="flex gap-2">
