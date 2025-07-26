@@ -120,6 +120,9 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
             question = lines[lines.length - 1]?.trim() || q.key;
           }
           
+          // Debug log to see what we're working with
+          console.log(`Before cleaning [${q.label}]:`, JSON.stringify(question));
+          
           // Aggressive quote removal - handle all quote types and multiple layers
           // Remove from start: any combination of quotes and spaces
           question = question.replace(/^[\s"'"""'''`]+/g, '');
@@ -127,6 +130,8 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
           question = question.replace(/[\s"'"""'''`]+$/g, '');
           // Final trim to clean up any remaining whitespace
           question = question.trim();
+          
+          console.log(`After cleaning [${q.label}]:`, JSON.stringify(question));
           
           return {
             label: q.label,
