@@ -1,0 +1,11 @@
+# Copy this content to your .env file
+
+# ElevenLabs Configuration
+ELEVENLABS_API_KEY=sk_a8bce414645f45ebfe8da832e0efdfb511e468e9cd64b150
+ELEVENLABS_WEBHOOK_SECRET=wsec_adbb48427559a6a30d6834a92ea98f7cc15883f6c584f136923bcab9dc9f08f4
+
+# Target Agent Configuration  
+TARGET_AGENT_ID=agent_01k076swcgekzt88m03gegfgsr
+
+# Database Configuration (if using external database)
+# DATABASE_URL=your_database_url_here 

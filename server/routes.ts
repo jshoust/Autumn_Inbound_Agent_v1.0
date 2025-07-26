@@ -166,6 +166,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signature = req.headers['elevenlabs-signature'] as string;
       const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
       
+      console.log('=== WEBHOOK SIGNATURE DEBUG ===');
+      console.log('Has signature header:', !!signature);
+      console.log('Has webhook secret:', !!webhookSecret);
+      console.log('Signature header:', signature ? signature.substring(0, 50) + '...' : 'none');
+      
       if (webhookSecret && signature) {
         const isValid = verifyElevenLabsWebhook(body, signature, webhookSecret);
         
@@ -174,6 +179,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: 'Invalid signature' });
         }
         console.log('Webhook signature verified successfully');
+      } else {
+        console.log('Skipping signature verification - no secret configured');
       }
       
       console.log('Received ElevenLabs webhook:', JSON.stringify(webhookData, null, 2));
