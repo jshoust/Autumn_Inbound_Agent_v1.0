@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2, UserPlus, Edit } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getCurrentUser } from "@/lib/auth";
 import Header from "@/components/header";
 
 interface User {
@@ -23,6 +24,8 @@ interface User {
 
 export default function Settings() {
   const { toast } = useToast();
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -110,16 +113,17 @@ export default function Settings() {
               <div>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>
-                  Manage system users and their permissions
+                  {isAdmin ? "Manage system users and their permissions" : "View system users (Admin access required for changes)"}
                 </CardDescription>
               </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-[#4a7c59] hover:bg-[#3e6b4a]">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add User
-                  </Button>
-                </DialogTrigger>
+              {isAdmin && (
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-[#4a7c59] hover:bg-[#3e6b4a]">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add User
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{editingUser ? "Edit User" : "Create New User"}</DialogTitle>
@@ -204,7 +208,8 @@ export default function Settings() {
                     </div>
                   </form>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              )}
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -242,23 +247,27 @@ export default function Settings() {
                           {new Date(user.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteUserMutation.mutate(user.id)}
-                              disabled={deleteUserMutation.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          {isAdmin ? (
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(user)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteUserMutation.mutate(user.id)}
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Admin only</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -468,8 +468,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users', requireAuth, async (req, res) => {
+  app.post('/api/users', requireAuth, async (req: AuthRequest, res) => {
     try {
+      // Check if user is admin
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
       const userData = insertUserSchema.parse(req.body);
       // Hash password before storing
       const hashedPassword = await hashPassword(userData.password);
@@ -485,8 +490,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/users/:id', requireAuth, async (req, res) => {
+  app.patch('/api/users/:id', requireAuth, async (req: AuthRequest, res) => {
     try {
+      // Check if user is admin
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
       const { id } = req.params;
       const updateData = updateUserSchema.parse(req.body);
       
@@ -510,8 +520,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  app.delete('/api/users/:id', requireAuth, async (req: AuthRequest, res) => {
     try {
+      // Check if user is admin
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
       const { id } = req.params;
       const success = await storage.deleteUser(parseInt(id));
       
