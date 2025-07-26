@@ -156,9 +156,13 @@ export default function CandidateTable({
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Candidate</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Call Details</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Experience</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contact Info</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q1: CDL</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q2: Experience</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q3: Hopper</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q4: OTR</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q5: Violations</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Q6: Work Auth</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
             </tr>
@@ -166,58 +170,154 @@ export default function CandidateTable({
           <tbody className="bg-white divide-y divide-slate-200">
             {candidates.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
                   No candidates found. Waiting for incoming calls...
                 </td>
               </tr>
             ) : (
-              candidates.map((candidate) => (
-                <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center">
-                          <User className="text-slate-600 w-5 h-5" />
+              candidates.map((candidate) => {
+                // Extract data collection results from stored API data
+                const rawData = candidate.rawConversationData as any;
+                const dataCollection = rawData?.analysis?.data_collection_results || {};
+                
+                const getQuestionValue = (field: string) => dataCollection[field]?.value;
+                const getQuestionResponse = (field: string) => dataCollection[field]?.value || '';
+                
+                return (
+                  <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
+                    {/* Contact Information */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center">
+                            <User className="text-slate-600 w-5 h-5" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-slate-900">
+                            {candidate.firstName} {candidate.lastName}
+                          </div>
+                          <div className="text-sm text-slate-500">{candidate.phone}</div>
+                          <div className="text-xs text-slate-400">
+                            {formatCallTime(candidate.createdAt)}
+                          </div>
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-slate-900">{candidate.phone}</div>
-                        <div className="text-sm text-slate-500">Call #{candidate.callId || candidate.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-slate-900">
-                      <span className="font-medium">{formatCallTime(candidate.createdAt)}</span>
-                      <span className="text-slate-500 ml-2">
-                        {candidate.createdAt && new Date(candidate.createdAt).toDateString() === new Date().toDateString() ? 'Today' : ''}
-                      </span>
-                    </div>
-                    {candidate.transcript && (
-                      <Button
-                        variant="link"
-                        className="text-sm text-primary hover:text-blue-700 transition-colors mt-1 p-0 h-auto"
-                        onClick={() => onViewTranscript(candidate)}
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        View Transcript
-                      </Button>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-900">
-                      <div>{candidate.hasExperience ? '24+ months' : 'Not specified'}</div>
-                      {(candidate.dataCollection as any)?.cdl_type && (
-                        <div className="mt-1">
-                          {getCDLBadge((candidate.dataCollection as any)?.cdl_type)}
+                    </td>
+                    
+                    {/* Q1: CDL */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('question_one') === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : getQuestionValue('question_one') === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_one_response')}>
+                          {getQuestionResponse('question_one_response') ? `"${getQuestionResponse('question_one_response')}"` : '-'}
                         </div>
+                      </div>
+                    </td>
+                    
+                    {/* Q2: Experience */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('Question_two') === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : getQuestionValue('Question_two') === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_two_response')}>
+                          {getQuestionResponse('question_two_response') ? `"${getQuestionResponse('question_two_response')}"` : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Q3: Hopper */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('Question_three') === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : getQuestionValue('Question_three') === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_three_response')}>
+                          {getQuestionResponse('question_three_response') ? `"${getQuestionResponse('question_three_response')}"` : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Q4: OTR */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('question_four') === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : getQuestionValue('question_four') === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('Question_four_response')}>
+                          {getQuestionResponse('Question_four_response') ? `"${getQuestionResponse('Question_four_response')}"` : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Q5: Violations */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('question_five') === true ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : getQuestionValue('question_five') === false ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20" title={getQuestionResponse('question_five_reponse')}>
+                          {getQuestionResponse('question_five_reponse') ? `"${getQuestionResponse('question_five_reponse')}"` : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Q6: Work Auth */}
+                    <td className="px-3 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-1">
+                        {getQuestionValue('question_six') === true ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : getQuestionValue('question_six') === false ? (
+                          <X className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-gray-400" />
+                        )}
+                        <div className="text-xs text-slate-600 truncate max-w-20">
+                          {getQuestionValue('question_six') !== null ? (getQuestionValue('question_six') ? 'Yes' : 'No') : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(candidate.qualified)}
+                      {candidate.transcript && (
+                        <Button
+                          variant="link"
+                          className="text-sm text-primary hover:text-blue-700 transition-colors mt-1 p-0 h-auto block"
+                          onClick={() => onViewTranscript(candidate)}
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          View Details
+                        </Button>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(candidate.qualified)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    </td>
+                    
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     {/* Only show manual override buttons for unprocessed (null) candidates */}
                     {candidate.qualified === null ? (
                       <>
