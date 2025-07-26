@@ -190,10 +190,6 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
   const allData = data._all;
   
-  console.log('DetailCellRenderer - candidate:', candidate);
-  console.log('DetailCellRenderer - allData:', allData);
-  console.log('DetailCellRenderer - data keys:', allData ? Object.keys(allData) : 'no data');
-  
   // Define proper question mapping with descriptions
   const questionMapping: Record<string, { question: string; type: string }> = {
     'First_Name': { question: 'What is your first name?', type: 'text' },
@@ -216,17 +212,13 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   // Extract and format the questions and responses
   const getFormattedResponses = () => {
     if (!allData || Object.keys(allData).length === 0) {
-      console.log('No allData available for expansion');
       return [];
     }
     
-    console.log('Processing allData keys:', Object.keys(allData));
     const responses: Array<{ question: string; answer: any; type: string }> = [];
     
-    // First, show all available data for debugging
+    // Process all available data
     Object.entries(allData).forEach(([key, value]: [string, any]) => {
-      console.log(`Data key: ${key}, value:`, value);
-      
       if (value && typeof value === 'object' && value.value !== null && value.value !== undefined && value.value !== '') {
         let displayValue = value.value;
         let questionText = questionMapping[key]?.question || key.replace(/_/g, ' ');
@@ -250,7 +242,6 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
       }
     });
 
-    console.log('Formatted responses:', responses);
     return responses;
   };
 

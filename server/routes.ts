@@ -566,15 +566,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/reports/configs', requireAuth, async (req: AuthRequest, res) => {
     try {
       if (req.user?.role !== 'admin') {
+        console.log('Non-admin user attempting to create report config:', req.user);
         return res.status(403).json({ error: 'Admin access required' });
       }
 
+      console.log('Creating report config with data:', req.body);
       const configData = insertReportsConfigSchema.parse(req.body);
+      console.log('Parsed config data:', configData);
       const config = await storage.createReportConfig(configData);
+      console.log('Created report config:', config);
       res.status(201).json(config);
     } catch (error) {
       console.error('Error creating report config:', error);
-      res.status(400).json({ error: 'Failed to create report configuration' });
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
+        res.status(400).json({ error: 'Validation failed', validation: error.errors });
+      } else {
+        res.status(400).json({ error: 'Failed to create report configuration' });
+      }
     }
   });
 
@@ -582,21 +591,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/reports/configs/:id', requireAuth, async (req: AuthRequest, res) => {
     try {
       if (req.user?.role !== 'admin') {
+        console.log('Non-admin user attempting to update report config:', req.user);
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       const { id } = req.params;
+      console.log('Updating report config ID:', id, 'with data:', req.body);
       const updateData = updateReportsConfigSchema.parse(req.body);
+      console.log('Parsed update data:', updateData);
       const config = await storage.updateReportConfig(parseInt(id), updateData);
 
       if (!config) {
+        console.log('Report config not found for ID:', id);
         return res.status(404).json({ error: 'Report configuration not found' });
       }
 
+      console.log('Updated report config:', config);
       res.json(config);
     } catch (error) {
       console.error('Error updating report config:', error);
-      res.status(400).json({ error: 'Failed to update report configuration' });
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
+        res.status(400).json({ error: 'Validation failed', validation: error.errors });
+      } else {
+        res.status(400).json({ error: 'Failed to update report configuration' });
+      }
     }
   });
 
