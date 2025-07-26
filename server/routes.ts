@@ -15,6 +15,10 @@ import {
   hashPassword,
   type AuthRequest 
 } from "./auth";
+import { postmarkService } from "./postmark";
+import { reportGenerator } from "./report-generator";
+import { reportScheduler } from "./scheduler";
+import { insertReportsConfigSchema, updateReportsConfigSchema } from "@shared/schema";
 
 // Webhook signature verification - proper ElevenLabs format
 function verifyElevenLabsWebhook(body: Buffer, signature: string, secret: string): boolean {
@@ -541,19 +545,293 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/users/:id', async (req, res) => {
+  // === POSTMARK EMAIL REPORTS API ENDPOINTS ===
+
+  // Get all report configurations (Admin only)
+  app.get('/api/reports/configs', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const configs = await storage.getReportConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error('Error fetching report configs:', error);
+      res.status(500).json({ error: 'Failed to fetch report configurations' });
+    }
+  });
+
+  // Create new report configuration (Admin only)
+  app.post('/api/reports/configs', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const configData = insertReportsConfigSchema.parse(req.body);
+      const config = await storage.createReportConfig(configData);
+      res.status(201).json(config);
+    } catch (error) {
+      console.error('Error creating report config:', error);
+      res.status(400).json({ error: 'Failed to create report configuration' });
+    }
+  });
+
+  // Update report configuration (Admin only)
+  app.patch('/api/reports/configs/:id', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+      const updateData = updateReportsConfigSchema.parse(req.body);
+      const config = await storage.updateReportConfig(parseInt(id), updateData);
+
+      if (!config) {
+        return res.status(404).json({ error: 'Report configuration not found' });
+      }
+
+      res.json(config);
+    } catch (error) {
+      console.error('Error updating report config:', error);
+      res.status(400).json({ error: 'Failed to update report configuration' });
+    }
+  });
+
+  // Delete report configuration (Admin only)
+  app.delete('/api/reports/configs/:id', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+      const success = await storage.deleteReportConfig(parseInt(id));
+
+      if (!success) {
+        return res.status(404).json({ error: 'Report configuration not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting report config:', error);
+      res.status(500).json({ error: 'Failed to delete report configuration' });
+    }
+  });
+
+  // Send test report (Admin only)
+  app.post('/api/reports/test', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { recipientEmail, reportConfigId } = req.body;
+
+      if (!recipientEmail) {
+        return res.status(400).json({ error: 'Recipient email is required' });
+      }
+
+      const result = await reportGenerator.sendTestReport(recipientEmail, reportConfigId);
+
+      if (result.success) {
+        res.json({ success: true, message: 'Test report sent successfully' });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('Error sending test report:', error);
+      res.status(500).json({ error: 'Failed to send test report' });
+    }
+  });
+
+  // Test Postmark connection (Admin only)
+  app.get('/api/reports/test-connection', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const result = await postmarkService.testConnection();
+
+      if (result.success) {
+        res.json({ success: true, message: 'Postmark connection successful' });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('Error testing Postmark connection:', error);
+      res.status(500).json({ error: 'Failed to test Postmark connection' });
+    }
+  });
+
+  // Get email logs (Admin only)
+  app.get('/api/reports/logs', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { limit, reportConfigId } = req.query;
+      const limitNum = limit ? parseInt(limit as string) : 100;
+
+      let logs;
+      if (reportConfigId) {
+        logs = await storage.getEmailLogsByReportConfig(parseInt(reportConfigId as string));
+      } else {
+        logs = await storage.getEmailLogs(limitNum);
+      }
+
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching email logs:', error);
+      res.status(500).json({ error: 'Failed to fetch email logs' });
+    }
+  });
+
+  // Send manual report now (Admin only)
+  app.post('/api/reports/send/:id', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+      const reportConfig = await storage.getReportConfig(parseInt(id));
+
+      if (!reportConfig) {
+        return res.status(404).json({ error: 'Report configuration not found' });
+      }
+
+      const result = await reportGenerator.sendScheduledReport(reportConfig);
+
+      res.json({
+        success: true,
+        message: `Report sent to ${result.sent} recipients`,
+        details: {
+          sent: result.sent,
+          failed: result.failed,
+          errors: result.errors
+        }
+      });
+    } catch (error) {
+      console.error('Error sending manual report:', error);
+      res.status(500).json({ error: 'Failed to send report' });
+    }
+  });
+
+  // Update user email preferences (Users can update their own preferences)
+  app.patch('/api/users/:id/email-preferences', requireAuth, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteUser(parseInt(id));
-      
-      if (!deleted) {
+      const userId = parseInt(id);
+
+      // Users can only update their own preferences, or admins can update anyone's
+      if (req.user?.id !== userId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Can only update your own email preferences' });
+      }
+
+      const { emailNotifications, reportFrequency } = req.body;
+
+      const updateData: { emailNotifications?: boolean; reportFrequency?: string } = {};
+      if (typeof emailNotifications === 'boolean') {
+        updateData.emailNotifications = emailNotifications;
+      }
+      if (reportFrequency && ['daily', 'weekly', 'monthly', 'disabled'].includes(reportFrequency)) {
+        updateData.reportFrequency = reportFrequency;
+      }
+
+      const user = await storage.updateUser(userId, updateData);
+
+      if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
-      res.status(204).send();
+
+      // Return user without password
+      const { password, ...userResponse } = user;
+      res.json(userResponse);
     } catch (error) {
-      console.error('Error deleting user:', error);
-      res.status(500).json({ error: 'Failed to delete user' });
+      console.error('Error updating email preferences:', error);
+      res.status(400).json({ error: 'Failed to update email preferences' });
+         }
+   });
+
+  // === SCHEDULER CONTROL ENDPOINTS ===
+
+  // Get scheduler status (Admin only)
+  app.get('/api/reports/scheduler/status', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const status = reportScheduler.getStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting scheduler status:', error);
+      res.status(500).json({ error: 'Failed to get scheduler status' });
+    }
+  });
+
+  // Start scheduler (Admin only)
+  app.post('/api/reports/scheduler/start', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      reportScheduler.start();
+      res.json({ success: true, message: 'Scheduler started' });
+    } catch (error) {
+      console.error('Error starting scheduler:', error);
+      res.status(500).json({ error: 'Failed to start scheduler' });
+    }
+  });
+
+  // Stop scheduler (Admin only)
+  app.post('/api/reports/scheduler/stop', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      reportScheduler.stop();
+      res.json({ success: true, message: 'Scheduler stopped' });
+    } catch (error) {
+      console.error('Error stopping scheduler:', error);
+      res.status(500).json({ error: 'Failed to stop scheduler' });
+    }
+  });
+
+  // Refresh scheduler (reload configs from database) (Admin only)
+  app.post('/api/reports/scheduler/refresh', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      await reportScheduler.refreshSchedule();
+      res.json({ success: true, message: 'Scheduler refreshed' });
+    } catch (error) {
+      console.error('Error refreshing scheduler:', error);
+      res.status(500).json({ error: 'Failed to refresh scheduler' });
+    }
+  });
+
+  // Force process all scheduled reports now (Admin only)
+  app.post('/api/reports/scheduler/force-run', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      await reportScheduler.forceProcessReports();
+      res.json({ success: true, message: 'All scheduled reports processed' });
+    } catch (error) {
+      console.error('Error force running reports:', error);
+      res.status(500).json({ error: 'Failed to force run reports' });
     }
   });
 

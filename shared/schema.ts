@@ -85,6 +85,9 @@ export const users = pgTable("users", {
   email: text("email").notNull(),
   role: text("role").notNull().default("recruiter"), // recruiter, admin, manager
   receiveNotifications: boolean("receive_notifications").notNull().default(true),
+  // New email report preferences
+  emailNotifications: boolean("email_notifications").default(true),
+  reportFrequency: text("report_frequency").default("weekly"), // daily, weekly, monthly, disabled
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -101,3 +104,72 @@ export const updateUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Reports configuration table for email scheduling
+export const reportsConfig = pgTable("reports_config", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // 'weekly_summary', 'daily_stats', etc.
+  enabled: boolean("enabled").default(true),
+  frequency: text("frequency").notNull(), // daily, weekly, monthly
+  frequencyValue: integer("frequency_value").default(1), // e.g., every 2 weeks
+  dayOfWeek: integer("day_of_week"), // 0-6 for weekly reports (0=Sunday)
+  dayOfMonth: integer("day_of_month"), // 1-31 for monthly reports
+  hourOfDay: integer("hour_of_day").default(9), // 24-hour format
+  
+  // Report content configuration
+  reportType: text("report_type").notNull().default("summary"), // summary, detailed, custom
+  includeMetrics: jsonb("include_metrics").default({"total_calls": true, "qualified_leads": true, "conversion_rate": true}),
+  includeCallDetails: boolean("include_call_details").default(true),
+  includeCharts: boolean("include_charts").default(false),
+  
+  // Email template settings
+  subjectTemplate: text("subject_template").default("TruckRecruit Pro - {period} Report"),
+  templateData: jsonb("template_data").default({}),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastSentAt: timestamp("last_sent_at"),
+  nextSendAt: timestamp("next_send_at"),
+});
+
+export const insertReportsConfigSchema = createInsertSchema(reportsConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateReportsConfigSchema = createInsertSchema(reportsConfig).omit({
+  id: true,
+  createdAt: true,
+}).partial();
+
+export type InsertReportsConfig = z.infer<typeof insertReportsConfigSchema>;
+export type UpdateReportsConfig = z.infer<typeof updateReportsConfigSchema>;
+export type ReportsConfig = typeof reportsConfig.$inferSelect;
+
+// Email logs table to track sent emails
+export const emailLogs = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  reportConfigId: integer("report_config_id").references(() => reportsConfig.id),
+  recipientEmail: text("recipient_email").notNull(),
+  recipientUserId: integer("recipient_user_id").references(() => users.id),
+  subject: text("subject").notNull(),
+  status: text("status").notNull(), // sent, failed, pending
+  postmarkMessageId: text("postmark_message_id"),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  
+  // Report data snapshot
+  reportPeriodStart: timestamp("report_period_start"),
+  reportPeriodEnd: timestamp("report_period_end"),
+  reportData: jsonb("report_data"),
+});
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;

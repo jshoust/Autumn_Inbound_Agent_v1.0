@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { reportScheduler } from "./scheduler";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -72,5 +73,13 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start the report scheduler for automatic email reports
+    if (process.env.NODE_ENV !== 'production') {
+      // In development, start manually for better control
+      reportScheduler.start();
+      console.log('📧 Report scheduler started for development');
+    }
+    // Note: In production, scheduler auto-starts when module is imported
   });
 })();
