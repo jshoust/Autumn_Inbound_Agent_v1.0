@@ -930,7 +930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const callRecord = callRecords[0];
-      const isApproved = approved !== false; // Default to approved unless explicitly false
+      const isApproved = approved === true; // Only approve if explicitly true
       const status = isApproved ? 'APPROVED' : 'DENIED';
       const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
       const subject = isApproved ? `New Candidate Application Approved - ${candidateName}` : `New Candidate Application Denied - ${candidateName}`;
