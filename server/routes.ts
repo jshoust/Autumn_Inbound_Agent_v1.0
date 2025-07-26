@@ -12,6 +12,7 @@ import {
   loginHandler, 
   registerHandler, 
   getCurrentUser,
+  hashPassword,
   type AuthRequest 
 } from "./auth";
 
@@ -456,8 +457,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // User management routes
-  app.get('/api/users', async (req, res) => {
+  // User management routes - Protected
+  app.get('/api/users', requireAuth, async (req, res) => {
     try {
       const users = await storage.getUsers();
       res.json(users);
@@ -467,31 +468,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users', async (req, res) => {
+  app.post('/api/users', requireAuth, async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(userData);
-      res.status(201).json(user);
+      // Hash password before storing
+      const hashedPassword = await hashPassword(userData.password);
+      const userWithHashedPassword = { ...userData, password: hashedPassword };
+      const user = await storage.createUser(userWithHashedPassword);
+      
+      // Return user without password
+      const { password, ...userResponse } = user;
+      res.status(201).json(userResponse);
     } catch (error) {
       console.error('Error creating user:', error);
       res.status(400).json({ error: 'Failed to create user' });
     }
   });
 
-  app.patch('/api/users/:id', async (req, res) => {
+  app.patch('/api/users/:id', requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = updateUserSchema.parse(req.body);
+      
+      // Hash password if provided
+      if (updateData.password) {
+        updateData.password = await hashPassword(updateData.password);
+      }
+      
       const user = await storage.updateUser(parseInt(id), updateData);
       
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
       
-      res.json(user);
+      // Return user without password
+      const { password, ...userResponse } = user;
+      res.json(userResponse);
     } catch (error) {
       console.error('Error updating user:', error);
       res.status(400).json({ error: 'Failed to update user' });
+    }
+  });
+
+  app.delete('/api/users/:id', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteUser(parseInt(id));
+      
+      if (!success) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ error: 'Failed to delete user' });
     }
   });
 
