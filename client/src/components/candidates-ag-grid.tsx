@@ -87,10 +87,10 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
           // Extract the actual question from the description (usually in quotes)
           const description = item.json_schema.description;
           
-          // Try multiple patterns to extract questions
+          // Extract question text and remove quotes for consistency
           let question = '';
           
-          // Pattern 1: Text in double quotes
+          // Pattern 1: Text in double quotes (remove the quotes)
           const doubleQuoteMatch = description.match(/"([^"]+)"/);
           if (doubleQuoteMatch) {
             question = doubleQuoteMatch[1];
@@ -119,6 +119,9 @@ function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta:
             const lines = description.split('\n').filter(line => line.trim());
             question = lines[lines.length - 1]?.trim() || q.key;
           }
+          
+          // Remove any remaining quotes for consistency
+          question = question.replace(/^["']|["']$/g, '').trim();
           
           return {
             label: q.label,
