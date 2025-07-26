@@ -700,6 +700,7 @@ export default function CandidatesAgGrid({
           ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
+          theme="legacy"
           defaultColDef={{
             resizable: true,
             sortable: true,
@@ -714,7 +715,9 @@ export default function CandidatesAgGrid({
             enableClickSelection: false, 
             headerCheckbox: true
           }}
-          isRowSelectable={(params) => params.data._rowType !== 'expanded'}
+          selectionOptions={{
+            isRowSelectable: (params) => params.data._rowType !== 'expanded'
+          }}
           onSelectionChanged={handleSelectionChanged}
           getRowHeight={(params) => {
             return params.data._rowType === 'expanded' ? 200 : 45;
