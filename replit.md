@@ -157,6 +157,13 @@ The system is designed for rapid development and easy scaling, with a focus on r
 - **Status**: "CALL COMPLETED - PENDING REVIEW" for all new applications
 - **Integration**: Built into webhook endpoint `/api/inbound` for seamless operation
 
+### Agent Information Display
+- **Header Integration**: ElevenLabs agent name and phone number displayed in top bar
+- **Real-time Data**: Fetches live agent details from ElevenLabs API
+- **API Endpoint**: `/api/elevenlabs/agents/:agentId` for agent information
+- **Mobile Responsive**: Agent info hidden on small screens, visible on desktop
+- **Visual Design**: Blue-themed badge with agent name and phone number icons
+
 ## Environment Setup
 
 **Required Environment Variables:**

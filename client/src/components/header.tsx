@@ -1,11 +1,18 @@
 import { Link, useLocation } from "wouter";
-import { Building2, Users, Settings, LogOut } from "lucide-react";
+import { Building2, Users, Settings, LogOut, Phone, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { logout, getCurrentUser } from "@/lib/auth";
 import logoPath from "@assets/boon_technologies_inc_logo_1753523763574.jpg";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Header() {
   const [location] = useLocation();
+  
+  // Fetch agent details
+  const { data: agentData } = useQuery({
+    queryKey: ['/api/elevenlabs/agents/agent_01k076swcgekzt88m03gegfgsr'],
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
+  });
 
   return (
     <header className="bg-white shadow-sm border-b border-border">
@@ -27,6 +34,26 @@ export default function Header() {
               </p>
             </div>
           </div>
+
+          {/* Agent Information */}
+          {agentData && (
+            <div className="hidden md:flex items-center space-x-4 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2 text-sm">
+                <User className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-blue-900">
+                  {agentData.name || 'Voice Agent'}
+                </span>
+              </div>
+              {agentData.phone_number && (
+                <div className="flex items-center space-x-2 text-sm border-l border-blue-300 pl-4">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-800">
+                    {agentData.phone_number}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Navigation */}
           <div className="flex items-center space-x-4">

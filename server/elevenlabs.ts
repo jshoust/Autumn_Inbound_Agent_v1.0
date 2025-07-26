@@ -41,6 +41,18 @@ export class ElevenLabsService {
     }
   }
 
+  async getAgentDetails(agentId: string): Promise<any> {
+    try {
+      console.log(`Fetching agent details for ${agentId}...`);
+      const data = await this.makeRequest(`/convai/agents/${agentId}`);
+      console.log(`Retrieved agent details: ${data.name}`);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch agent details:', error);
+      throw error;
+    }
+  }
+
   async getRecentConversations(limit: number = 10): Promise<any[]> {
     try {
       console.log(`Fetching recent ${limit} conversations from ElevenLabs...`);

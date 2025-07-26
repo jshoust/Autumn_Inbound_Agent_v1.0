@@ -416,6 +416,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific agent details endpoint
+  app.get('/api/elevenlabs/agents/:agentId', requireAuth, async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      const agentDetails = await elevenLabsService.getAgentDetails(agentId);
+      res.json(agentDetails);
+    } catch (error) {
+      console.error('Error fetching agent details:', error);
+      res.status(500).json({ error: 'Failed to fetch agent details' });
+    }
+  });
+
   // ElevenLabs recent conversations endpoint
   app.get('/api/elevenlabs/conversations', async (req, res) => {
     try {
