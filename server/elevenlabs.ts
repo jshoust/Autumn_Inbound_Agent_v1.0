@@ -16,7 +16,7 @@ export class ElevenLabsService {
       ...options,
       headers: {
         'Accept': 'application/json',
-        'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+        'xi-api-key': 'sk_a8bce414645f45ebfe8da832e0efdfb511e468e9cd64b150',
         ...options.headers,
       }
     });
@@ -46,6 +46,8 @@ export class ElevenLabsService {
       console.log(`Fetching agent details for ${agentId}...`);
       const data = await this.makeRequest(`/convai/agents/${agentId}`);
       console.log(`Retrieved agent details: ${data.name}`);
+      console.log(`Phone number: ${data.phone_number || data.telephony?.phone_number || 'No phone number found'}`);
+      console.log('Full agent response:', JSON.stringify(data, null, 2));
       return data;
     } catch (error) {
       console.error('Failed to fetch agent details:', error);
