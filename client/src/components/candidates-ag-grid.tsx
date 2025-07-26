@@ -3,7 +3,8 @@ import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, FileText, ChevronDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, X, Clock, FileText, ChevronDown, HelpCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +70,69 @@ function getQuestionsMeta(candidate: any) {
   });
   
   return boolQuestions;
+}
+
+// Questions Reference Card Component
+function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta: any[], candidateList: any[] }) {
+  if (questionMeta.length === 0) return null;
+
+  // Get questions with descriptions from the first candidate with data
+  const questionsWithDescriptions = useMemo(() => {
+    for (const candidate of candidateList) {
+      const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
+      
+      const questionsData = questionMeta.map(q => {
+        const item = results[q.key];
+        if (item?.json_schema?.description) {
+          // Extract the actual question from the description (usually in quotes)
+          const description = item.json_schema.description;
+          const questionMatch = description.match(/"([^"]+)"/);
+          const question = questionMatch ? questionMatch[1] : description.split('\n').pop()?.trim() || q.key;
+          
+          return {
+            label: q.label,
+            question: question,
+            key: q.key
+          };
+        }
+        return {
+          label: q.label,
+          question: q.key,
+          key: q.key
+        };
+      });
+      
+      if (questionsData.some(q => q.question)) {
+        return questionsData;
+      }
+    }
+    return [];
+  }, [questionMeta, candidateList]);
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <HelpCircle className="w-5 h-5" />
+          Screening Questions Reference
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {questionsWithDescriptions.map((q, idx) => (
+            <div key={q.key} className="p-3 border rounded-lg bg-slate-50">
+              <div className="font-semibold text-sm text-blue-600 mb-1">
+                {q.label}
+              </div>
+              <div className="text-sm text-gray-700">
+                {q.question}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 // Actions Cell Renderer
@@ -333,6 +397,9 @@ export default function CandidatesAgGrid({
 
   return (
     <div className="space-y-4">
+      {/* Questions Reference Card */}
+      <QuestionsReferenceCard questionMeta={questionMeta} candidateList={candidateList} />
+      
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
