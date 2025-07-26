@@ -65,23 +65,33 @@ export class DatabaseStorage implements IStorage {
   async createCandidate(candidateData: {
     conversationId: string;
     callId: string;
+    firstName?: string | null;
+    lastName?: string | null;
     phone: string;
+    hasCdlA?: boolean | null;
+    hasExperience?: boolean | null;
+    hasViolations?: boolean | null;
+    hasWorkAuth?: boolean | null;
+    agentId?: string | null;
+    callDurationSecs?: number | null;
     transcript?: string | null;
     dataCollection?: any;
     qualified?: boolean | null;
     rawConversationData?: any;
   }): Promise<Candidate> {
-    // Extract first name, last name, and phone from dataCollection if available
-    const firstName = candidateData.dataCollection?.first_name || null;
-    const lastName = candidateData.dataCollection?.last_name || null;
-    const extractedPhone = candidateData.dataCollection?.phone_number || candidateData.phone;
     
     const insertData: InsertCandidate = {
       conversationId: candidateData.conversationId,
       callId: candidateData.callId,
-      firstName: firstName,
-      lastName: lastName,
-      phone: extractedPhone,
+      firstName: candidateData.firstName,
+      lastName: candidateData.lastName,
+      phone: candidateData.phone,
+      hasCdlA: candidateData.hasCdlA,
+      hasExperience: candidateData.hasExperience,
+      hasViolations: candidateData.hasViolations,
+      hasWorkAuth: candidateData.hasWorkAuth,
+      agentId: candidateData.agentId,
+      callDuration: candidateData.callDurationSecs,
       transcript: candidateData.transcript || null,
       dataCollection: candidateData.dataCollection || null,
       qualified: candidateData.qualified || null,

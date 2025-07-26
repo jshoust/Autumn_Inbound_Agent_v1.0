@@ -3,6 +3,11 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// For ElevenLabs webhooks, we need raw body parsing for signature verification
+app.use('/api/inbound', express.raw({ type: 'application/json' }));
+
+// For all other routes, use JSON parsing
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 

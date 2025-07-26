@@ -7,16 +7,40 @@ import { elevenLabsService } from "./elevenlabs";
 import { z } from "zod";
 import crypto from "crypto";
 
-// Webhook signature verification
-function verifyElevenLabsWebhook(payload: string, signature: string, secret: string): boolean {
+// Webhook signature verification - proper ElevenLabs format
+function verifyElevenLabsWebhook(body: Buffer, signature: string, secret: string): boolean {
   if (!secret) return true; // Skip verification if no secret configured
   
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
+  try {
+    const headers = signature.split(',');
+    const timestampHeader = headers.find((e) => e.startsWith('t='));
+    const signatureHeader = headers.find((e) => e.startsWith('v0='));
     
-  return `sha256=${expectedSignature}` === signature;
+    if (!timestampHeader || !signatureHeader) {
+      console.log('Missing timestamp or signature in header');
+      return false;
+    }
+    
+    const timestamp = timestampHeader.substring(2);
+    const signatureHash = signatureHeader;
+
+    // Validate timestamp (30 minute tolerance)
+    const reqTimestamp = parseInt(timestamp) * 1000;
+    const tolerance = Date.now() - 30 * 60 * 1000;
+    if (reqTimestamp < tolerance) {
+      console.log('Webhook request expired');
+      return false;
+    }
+
+    // Validate hash
+    const message = `${timestamp}.${body}`;
+    const digest = 'v0=' + crypto.createHmac('sha256', secret).update(message).digest('hex');
+    
+    return signatureHash === digest;
+  } catch (error) {
+    console.error('Webhook signature verification error:', error);
+    return false;
+  }
 }
 
 // Extract candidate information from transcript
@@ -124,13 +148,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Webhook endpoint to receive call data from ElevenLabs
   app.post('/api/inbound', async (req, res) => {
     try {
+      // Parse the raw body to JSON
+      const body = req.body instanceof Buffer ? req.body : Buffer.from(JSON.stringify(req.body));
+      let webhookData;
+      
+      try {
+        webhookData = JSON.parse(body.toString());
+      } catch (error) {
+        console.error('Failed to parse webhook body:', error);
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+      }
+      
       // Verify webhook signature if secret is configured
-      const signature = req.headers['x-elevenlabs-signature'] as string;
+      const signature = req.headers['elevenlabs-signature'] as string;
       const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
       
       if (webhookSecret && signature) {
-        const payload = JSON.stringify(req.body);
-        const isValid = verifyElevenLabsWebhook(payload, signature, webhookSecret);
+        const isValid = verifyElevenLabsWebhook(body, signature, webhookSecret);
         
         if (!isValid) {
           console.error('Invalid webhook signature');
@@ -139,80 +173,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Webhook signature verified successfully');
       }
       
-      console.log('Received ElevenLabs webhook:', JSON.stringify(req.body, null, 2));
+      console.log('Received ElevenLabs webhook:', JSON.stringify(webhookData, null, 2));
       
-      // Extract conversation ID and basic data from webhook
-      const { 
-        call_id, 
-        conversation_id, 
-        transcript, 
-        phone, 
-        answers,
-        caller_number,
-        agent_id 
-      } = req.body;
+      // Extract data from the actual ElevenLabs webhook format
+      const { data } = webhookData;
       
-      let conversationData = null;
-      let processedTransript = transcript;
-      let processedAnswers = answers;
+      if (!data) {
+        console.error('No data object in webhook payload');
+        return res.status(400).json({ error: 'Invalid webhook format - missing data object' });
+      }
       
-      // If we have a conversation_id, fetch full conversation details
-      if (conversation_id && process.env.ELEVENLABS_API_KEY) {
-        try {
-          conversationData = await elevenLabsService.getConversation(conversation_id);
-          if (conversationData && conversationData.transcript) {
-            console.log(`Retrieved full conversation with ${conversationData.transcript.length} messages`);
-            
-            // Build transcript text from ElevenLabs format
-            processedTransript = conversationData.transcript
-              .map(t => `${t.speaker.toUpperCase()}: ${t.text}`)
-              .join('\n');
-            
-            // Extract candidate data from transcript using the ElevenLabs conversation format
-            const candidateInfo = extractCandidateFromTranscript(
-              conversationData.transcript.map(t => ({ role: t.speaker, message: t.text }))
-            );
-            console.log('Extracted candidate info:', candidateInfo);
-            
-            // Analyze conversation for qualification data
-            const analysis = await elevenLabsService.analyzeConversation(conversationData.transcript);
-            processedAnswers = {
-              ...answers,
-              ...candidateInfo,
-              cdl: analysis.cdl,
-              cdl_type: analysis.cdlType,
-              experience: analysis.experience,
-              qualified: analysis.qualified
-            };
-            
-            console.log('Conversation analysis:', analysis);
+      const {
+        conversation_id,
+        agent_id,
+        data_collection,
+        transcript_summary,
+        conversation_initiation_client_data
+      } = data;
+      
+      console.log('=== WEBHOOK DATA EXTRACTION ===');
+      console.log('conversation_id:', conversation_id);
+      console.log('agent_id:', agent_id);
+      console.log('data_collection:', JSON.stringify(data_collection, null, 2));
+      console.log('transcript_summary:', transcript_summary);
+      console.log('=== END WEBHOOK DATA ===');
+      
+      // Extract qualification data from data_collection
+      let qualified = null;
+      let firstName = null;
+      let lastName = null;
+      let phone = 'unknown';
+      let hasCdlA = null;
+      let hasExperience = null;
+      let hasViolations = null;
+      let hasWorkAuth = null;
+      
+      if (data_collection) {
+        // Extract CDL information
+        if (data_collection.CDL) {
+          hasCdlA = data_collection.CDL.value === true;
+        }
+        
+        // Extract experience information
+        if (data_collection.Experience) {
+          const expValue = data_collection.Experience.value;
+          if (typeof expValue === 'string') {
+            // Parse experience strings like "24+ months", "2 years", etc.
+            const numMatch = expValue.match(/(\d+)/);
+            if (numMatch) {
+              const num = parseInt(numMatch[1]);
+              hasExperience = num >= 24 || expValue.toLowerCase().includes('year');
+            }
+          } else if (typeof expValue === 'boolean') {
+            hasExperience = expValue;
           }
-        } catch (error) {
-          console.error('Failed to fetch conversation details:', error);
-          // Continue with webhook data if API fetch fails
+        }
+        
+        // Extract violations information
+        if (data_collection.Violations) {
+          hasViolations = data_collection.Violations.value === true;
+        }
+        
+        // Extract phone number
+        if (data_collection.Phone_number) {
+          const phoneValue = data_collection.Phone_number.value;
+          if (phoneValue && phoneValue !== 'qualified-candidate') {
+            phone = phoneValue;
+          }
+        }
+        
+        // Calculate qualification status
+        if (hasCdlA !== null && hasExperience !== null) {
+          qualified = hasCdlA && hasExperience && !hasViolations;
         }
       }
       
-      // Extract phone from data collection if available
-      const extractedPhone = processedAnswers?.phone_number || processedAnswers?.Phone_number;
-      const finalPhone = extractedPhone || phone || caller_number || 'unknown';
-      const finalCallId = call_id || conversation_id || `conv-${Date.now()}`;
+      const finalCallId = conversation_id || `conv-${Date.now()}`;
+      const callDurationSecs = conversation_initiation_client_data?.dynamic_variables?.system__call_duration_secs || null;
 
-      console.log('DEBUGGING CANDIDATE DATA:');
-      console.log('finalCallId:', finalCallId);
-      console.log('finalPhone:', finalPhone);
-      console.log('processedAnswers:', processedAnswers);
-
-      // Basic qualification scoring logic using processed answers
-      let qualified = null;
-      if (processedAnswers) {
-        const hasValidCDL = processedAnswers.cdl === true || processedAnswers.cdl_type === 'CDL-A';
-        const hasExperience = processedAnswers.experience && parseInt(processedAnswers.experience) >= 2;
-        qualified = hasValidCDL && hasExperience;
-      }
+      console.log('=== PROCESSED QUALIFICATION DATA ===');
+      console.log('qualified:', qualified);
+      console.log('hasCdlA:', hasCdlA);
+      console.log('hasExperience:', hasExperience);
+      console.log('hasViolations:', hasViolations);
+      console.log('phone:', phone);
+      console.log('=== END PROCESSED DATA ===');
 
       // Ensure required fields are not null
-      if (!finalPhone) {
+      if (!phone) {
         console.error('Missing required phone number');
         return res.status(400).json({ error: 'Phone number is required' });
       }
@@ -225,11 +273,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const candidateData = {
         conversationId: finalCallId,  // This maps to conversation_id in DB 
         callId: finalCallId,          // This maps to call_id in DB
-        phone: finalPhone,
-        transcript: processedTransript || null,
-        dataCollection: processedAnswers || null,
-        qualified: qualified || false,
-        rawConversationData: req.body || null
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        hasCdlA: hasCdlA,
+        hasExperience: hasExperience,
+        hasViolations: hasViolations,
+        hasWorkAuth: hasWorkAuth,
+        agentId: agent_id,
+        callDurationSecs: callDurationSecs,
+        transcript: transcript_summary || null,
+        dataCollection: data_collection || null,
+        qualified: qualified,
+        rawConversationData: webhookData || null
       };
 
       console.log('Final candidateData:', JSON.stringify(candidateData, null, 2));
