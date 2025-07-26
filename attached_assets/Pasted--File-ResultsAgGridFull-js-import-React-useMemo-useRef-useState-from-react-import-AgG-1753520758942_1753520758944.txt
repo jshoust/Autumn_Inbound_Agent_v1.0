@@ -1,0 +1,141 @@
+// File: ResultsAgGridFull.js
+import React, { useMemo, useRef, useState } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { Button, Menu, MenuItem } from '@mui/material';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// Utility: map your JSON for AG Grid
+function mapDataForTable(dataCollectionResults) {
+  return Object.values(dataCollectionResults).map((item, idx) => ({
+    id: idx,
+    field: item.data_collection_id,
+    value: item.value === null ? 'N/A' : String(item.value),
+    description: item.json_schema?.description || '',
+    rationale: item.rationale || ''
+  }));
+}
+
+export default function ResultsAgGridFull({ json }) {
+  const gridRef = useRef();
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  // Prepare row data
+  const rowData = useMemo(() => {
+    try {
+      if (json?.analysis?.data_collection_results) {
+        return mapDataForTable(json.analysis.data_collection_results);
+      }
+    } catch (e) {}
+    return [];
+  }, [json]);
+
+  // Column definitions with inline editing and cell styles
+  const columnDefs = [
+    {
+      headerName: 'Field',
+      field: 'field',
+      minWidth: 170,
+      flex: 0.3,
+      editable: false,
+    },
+    {
+      headerName: 'Value',
+      field: 'value',
+      minWidth: 120,
+      flex: 0.2,
+      editable: true,
+      cellStyle: params => {
+        if (params.value === 'N/A') return { backgroundColor: '#ffeaea', color: '#c00', fontWeight: 500 };
+        if (params.value === 'true') return { backgroundColor: '#e7ffe7', color: '#168821', fontWeight: 500 };
+        if (params.value === 'false') return { backgroundColor: '#fff5e5', color: '#c96600', fontWeight: 500 };
+        return {};
+      }
+    },
+    {
+      headerName: 'Description',
+      field: 'description',
+      minWidth: 300,
+      flex: 0.6,
+      editable: true,
+    },
+    {
+      headerName: 'Rationale',
+      field: 'rationale',
+      minWidth: 350,
+      flex: 1,
+      editable: true,
+      cellStyle: params => params.value?.toLowerCase().includes('not asked')
+        ? { backgroundColor: '#fcfae1' }
+        : {}
+    }
+  ];
+
+  // Handle export to CSV
+  const exportCSV = () => {
+    gridRef.current.api.exportDataAsCsv();
+  };
+
+  // Multi-select and action menu
+  const handleSelectionChanged = () => {
+    const rows = gridRef.current.api.getSelectedRows();
+    setSelectedRows(rows);
+  };
+  const handleMenuOpen = event => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  // Example: Flag/Delete selected
+  const handleFlagRows = () => {
+    alert(`Flagged rows: ${selectedRows.map(r => r.field).join(', ')}`);
+    handleMenuClose();
+  };
+  const handleDeleteRows = () => {
+    selectedRows.forEach(row => {
+      gridRef.current.api.applyTransaction({ remove: [row] });
+    });
+    setSelectedRows([]);
+    handleMenuClose();
+  };
+
+  return (
+    <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 8px 0' }}>
+        <Button variant="contained" color="primary" onClick={exportCSV} sx={{ mr: 2 }}>
+          Export to CSV
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleMenuOpen}
+          disabled={selectedRows.length === 0}
+        >
+          Row Actions ({selectedRows.length})
+        </Button>
+        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+          <MenuItem onClick={handleFlagRows}>Flag Selected</MenuItem>
+          <MenuItem onClick={handleDeleteRows}>Delete Selected</MenuItem>
+        </Menu>
+      </div>
+      <div className="ag-theme-alpine" style={{ minHeight: 600, borderRadius: 10 }}>
+        <AgGridReact
+          ref={gridRef}
+          rowData={rowData}
+          columnDefs={columnDefs}
+          domLayout="autoHeight"
+          defaultColDef={{
+            resizable: true,
+            sortable: true,
+            filter: true,
+            wrapText: true,
+            autoHeight: true,
+            editable: true
+          }}
+          rowSelection="multiple"
+          onSelectionChanged={handleSelectionChanged}
+          suppressRowClickSelection={false}
+        />
+      </div>
+    </div>
+  );
+}

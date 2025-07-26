@@ -48,7 +48,7 @@ UI Structure: Simplified 2-tab interface (Dashboard + Settings) with call histor
 
 ### Frontend Components
 - **Dashboard**: Main application view with stats overview, recent calls, and candidate management
-- **CandidateTable**: Searchable, filterable table for candidate review
+- **CandidatesAgGrid**: Advanced AG Grid table component with dynamic columns, inline editing, CSV/Excel export, multi-row selection, and comprehensive candidate data display
 - **TranscriptModal**: Detailed call transcript viewer with qualification controls
 - **StatsOverview**: Real-time dashboard metrics
 - **Recent Calls Section**: Live ElevenLabs conversation history with mobile-responsive design
