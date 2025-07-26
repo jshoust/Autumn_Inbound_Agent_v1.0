@@ -6,6 +6,14 @@ import { emailService } from "./email";
 import { elevenLabsService } from "./elevenlabs";
 import { z } from "zod";
 import crypto from "crypto";
+import { 
+  requireAuth, 
+  optionalAuth, 
+  loginHandler, 
+  registerHandler, 
+  getCurrentUser,
+  type AuthRequest 
+} from "./auth";
 
 // Webhook signature verification - proper ElevenLabs format
 function verifyElevenLabsWebhook(body: Buffer, signature: string, secret: string): boolean {
@@ -145,6 +153,11 @@ function extractCandidateFromTranscript(transcript: Array<{ role: string; messag
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post('/api/auth/login', loginHandler);
+  app.post('/api/auth/register', registerHandler);
+  app.get('/api/auth/me', requireAuth, getCurrentUser);
+  
   // Target agent ID for filtering inbound calls
   const TARGET_AGENT_ID = process.env.TARGET_AGENT_ID || 'agent_01k076swcgekzt88m03gegfgsr';
   
@@ -262,8 +275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get candidates with optional search and filter (legacy)
-  app.get('/api/candidates', async (req, res) => {
+  // Get candidates with optional search and filter (legacy) - Protected
+  app.get('/api/candidates', requireAuth, async (req, res) => {
     try {
       const { search, status } = req.query;
       const candidates = await storage.getCandidates(
@@ -277,8 +290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get call records (new JSONB-based storage)
-  app.get('/api/call-records', async (req, res) => {
+  // Get call records (new JSONB-based storage) - Protected  
+  app.get('/api/call-records', requireAuth, async (req, res) => {
     try {
       const { agent_id, limit, search } = req.query;
       const agentId = agent_id as string || TARGET_AGENT_ID;
@@ -342,8 +355,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get dashboard stats
-  app.get('/api/stats', async (req, res) => {
+  // Get dashboard stats - Protected
+  app.get('/api/stats', requireAuth, async (req, res) => {
     try {
       const stats = await storage.getCandidateStats();
       res.json(stats);
