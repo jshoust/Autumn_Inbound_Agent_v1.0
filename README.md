@@ -6,7 +6,8 @@ A comprehensive AI-powered recruitment platform for commercial trucking companie
 
 - **Voice Agent Integration** - ElevenLabs AI processes inbound driver calls
 - **Real-time Dashboard** - Live candidate management with advanced filtering
-- **Automated Notifications** - Email alerts for approved/denied candidates with Excel reports
+- **Automatic Call Notifications** - Instant email alerts after every call completion
+- **Automated Decision Emails** - Email alerts for approved/denied candidates with Excel reports
 - **Advanced Data Grid** - AG Grid with inline editing, export, and multi-select
 - **Mobile Responsive** - Complete mobile-first design for on-the-go management
 - **Secure Authentication** - JWT-based user management system
@@ -70,10 +71,11 @@ JWT_SECRET=your_jwt_secret
 ## 📊 How It Works
 
 1. **Call Processing** - ElevenLabs processes driver calls and sends data via webhook
-2. **Data Storage** - Complete call records stored with JSONB flexibility
-3. **Admin Review** - Recruiters review candidates through the dashboard
-4. **Notifications** - Automated emails sent with Excel attachments
-5. **Reporting** - Comprehensive analytics and export capabilities
+2. **Instant Notification** - Automatic email sent immediately after each call completion
+3. **Data Storage** - Complete call records stored with JSONB flexibility
+4. **Admin Review** - Recruiters review candidates through the dashboard
+5. **Decision Emails** - Approval/denial notifications sent with Excel attachments
+6. **Reporting** - Comprehensive analytics and export capabilities
 
 ## 🎯 Key Components
 

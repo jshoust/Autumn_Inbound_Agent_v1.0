@@ -298,6 +298,118 @@ export class PostmarkService {
   }
 
   /**
+   * Send automatic call completion notification
+   */
+  async sendCallCompletionNotification(
+    recipientEmail: string,
+    callRecord: CallRecord
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.isEnabled) {
+      return { success: false, error: 'Postmark not configured' };
+    }
+
+    try {
+      const candidateName = `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim();
+      const subject = `New Driver Call Completed - ${candidateName}`;
+      
+      // Generate Excel attachment
+      const excelAttachment = this.generateExcelAttachment(callRecord);
+      const fileName = `call_${callRecord.conversationId}_completed.xlsx`;
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1e293b; margin: 0 0 10px 0;">TruckRecruit Pro - New Call Completed</h2>
+            <div style="background-color: #3b82f6; color: white; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 16px;">
+              CALL COMPLETED - PENDING REVIEW
+            </div>
+          </div>
+          
+          <h3 style="color: #1e293b;">Candidate Information</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background-color: #f9fafb;">
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Name:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${candidateName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Phone:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${callRecord.phone || 'Not provided'}</td>
+            </tr>
+            <tr style="background-color: #f9fafb;">
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Call Date:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">${new Date(callRecord.createdAt).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Status:</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb;">Pending Review</td>
+            </tr>
+          </table>
+
+          ${this.generateQualificationDetailsTable(callRecord)}
+
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <h4 style="color: #92400e; margin: 0 0 10px 0;">⚠️ Action Required</h4>
+            <p style="color: #92400e; margin: 0;">
+              This candidate requires manual review. Please log into the dashboard to approve or deny this application.
+            </p>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Complete call details and transcript are attached as an Excel file. Use the dashboard to make qualification decisions.
+          </p>
+        </div>
+      `;
+
+      const textBody = `
+TruckRecruit Pro - New Call Completed
+
+CALL COMPLETED - PENDING REVIEW
+
+Candidate Information:
+- Name: ${candidateName}
+- Phone: ${callRecord.phone || 'Not provided'}
+- Call Date: ${new Date(callRecord.createdAt).toLocaleDateString()}
+- Status: Pending Review
+
+⚠️ Action Required:
+This candidate requires manual review. Please log into the dashboard to approve or deny this application.
+
+Complete call details and transcript are attached as an Excel file.
+      `;
+
+      // Send the main notification email
+      const response = await this.client.sendEmail({
+        From: process.env.FROM_EMAIL || 'noreply@truckrecruit.pro',
+        To: recipientEmail,
+        Subject: subject,
+        HtmlBody: htmlBody,
+        TextBody: textBody,
+        Attachments: [{
+          Name: fileName,
+          Content: excelAttachment,
+          ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }],
+        MessageStream: 'outbound',
+        TrackOpens: true
+      });
+
+      console.log(`Call completion notification sent to ${recipientEmail}, MessageID: ${response.MessageID}`);
+
+      return {
+        success: true,
+        messageId: response.MessageID
+      };
+
+    } catch (error) {
+      console.error('Call completion notification error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
    * Send candidate application notification email
    */
   async sendCandidateNotification(

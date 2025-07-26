@@ -140,6 +140,8 @@ The system is designed for rapid development and easy scaling, with a focus on r
 
 ## Recent Changes (January 2025)
 
+- **Automatic Email Notifications**: Added instant email alerts after every call completion (January 26, 2025)
+- **Call Completion Workflow**: System now sends immediate notifications for all completed calls requiring review
 - **Email Notification System**: Complete Postmark integration with candidate approval/denial notifications
 - **Excel Report Generation**: Automated candidate data export with call transcripts and Q&A details
 - **Subject Line Improvements**: Candidate names now included in email subjects for easy identification
@@ -147,6 +149,13 @@ The system is designed for rapid development and easy scaling, with a focus on r
 - **Bug Fixes**: Corrected subject line logic to properly distinguish approved vs denied candidates
 - **Authentication System**: JWT-based login with user "Autumn" and secure password protection
 - **Production Ready**: All features tested and operational, ready for deployment and GitHub duplication
+
+### Latest Feature: Automatic Call Completion Emails
+- **Trigger**: Every ElevenLabs call completion automatically sends notification email
+- **Recipients**: Configured FROM_EMAIL address receives immediate alerts
+- **Content**: "New Driver Call Completed - [Candidate Name]" with Excel attachment
+- **Status**: "CALL COMPLETED - PENDING REVIEW" for all new applications
+- **Integration**: Built into webhook endpoint `/api/inbound` for seamless operation
 
 ## Environment Setup
 

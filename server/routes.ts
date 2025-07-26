@@ -245,24 +245,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Call Record ID:', callRecord.id);
       console.log('Extracted Data:', JSON.stringify(callRecord.extractedData, null, 2));
       console.log('=== END STORAGE ===');
-      
-      // Send email notification for qualified candidates
-      const extractedData = callRecord.extractedData as any;
-      if (extractedData?.qualified === true) {
+
+      // STEP 4: Send automatic email notification for every completed call
+      if (process.env.FROM_EMAIL) {
+        console.log('=== SENDING AUTOMATIC EMAIL NOTIFICATION ===');
         try {
-          // Create a legacy candidate record for email notification
-          const legacyCandidate = {
-            firstName: extractedData.firstName,
-            lastName: extractedData.lastName,
-            phone: extractedData.phoneNumber,
-            qualified: extractedData.qualified
-          };
-          await emailService.sendRecruiterNotification(legacyCandidate);
-          console.log('Recruiter notification sent successfully');
-        } catch (error) {
-          console.error('Failed to send recruiter notification:', error);
-          // Don't fail the whole request if email fails
+          const emailResult = await postmarkService.sendCallCompletionNotification(
+            process.env.FROM_EMAIL,
+            callRecord
+          );
+          
+          if (emailResult.success) {
+            console.log(`✅ Automatic email sent successfully - MessageID: ${emailResult.messageId}`);
+          } else {
+            console.error(`❌ Failed to send automatic email: ${emailResult.error}`);
+          }
+        } catch (emailError) {
+          console.error('❌ Email notification error:', emailError);
         }
+        console.log('=== EMAIL NOTIFICATION COMPLETE ===');
+      } else {
+        console.log('⚠️ Skipping email notification - FROM_EMAIL not configured');
       }
       
       res.status(200).json({ 
@@ -911,6 +914,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Test email error:', error);
       res.status(500).json({ error: 'Failed to send test email' });
+    }
+  });
+
+  // Test automatic call completion notification
+  app.post('/api/test-call-completion', requireAuth, async (req, res) => {
+    try {
+      const { to } = req.body;
+      
+      if (!to) {
+        return res.status(400).json({ error: 'Missing required field: to (email address)' });
+      }
+
+      // Get the latest call record for testing
+      const callRecords = await storage.getCallRecords(undefined, 1);
+      if (callRecords.length === 0) {
+        return res.status(404).json({ error: 'No call records found for testing' });
+      }
+
+      const callRecord = callRecords[0];
+      
+      const result = await postmarkService.sendCallCompletionNotification(to, callRecord);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          messageId: result.messageId,
+          message: `Call completion notification sent successfully`,
+          candidateName: `${callRecord.firstName || 'Unknown'} ${callRecord.lastName || ''}`.trim(),
+          note: "Automatic notification sent with call details and Excel attachment."
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.error || 'Failed to send notification'
+        });
+      }
+    } catch (error) {
+      console.error('Test call completion notification error:', error);
+      res.status(500).json({ error: 'Failed to send test notification' });
     }
   });
 
