@@ -627,8 +627,10 @@ export default function Settings() {
                 </CardContent>
               </Card>
             </TabsContent>
+            )}
 
             {/* Reports Tab */}
+            {isAdmin && (
             <TabsContent value="reports" className="space-y-4">
               <div className="grid gap-4">
                 <Card>
@@ -882,8 +884,10 @@ export default function Settings() {
                 </Card>
               </div>
             </TabsContent>
+            )}
 
             {/* Scheduler Tab */}
+            {isAdmin && (
             <TabsContent value="scheduler" className="space-y-4">
               <div className="grid gap-4">
                 <Card>
@@ -947,6 +951,110 @@ export default function Settings() {
                   </CardHeader>
                   <CardContent>
                     {emailLogs && Array.isArray(emailLogs) ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Recipient</TableHead>
+                            <TableHead>Subject</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Sent At</TableHead>
+                            <TableHead>Error</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {emailLogs.slice(0, 10).map((log: EmailLog) => (
+                            <TableRow key={log.id}>
+                              <TableCell>{log.recipientEmail}</TableCell>
+                              <TableCell className="max-w-xs truncate">{log.subject}</TableCell>
+                              <TableCell>
+                                <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
+                                  {log.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{new Date(log.sentAt).toLocaleString()}</TableCell>
+                              <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                                {log.errorMessage || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground">No email logs available</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            )}
+
+            {/* Scheduler Tab */}
+            {isAdmin && (
+            <TabsContent value="scheduler" className="space-y-4">
+              <div className="grid gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Scheduler Status</CardTitle>
+                    <CardDescription>Monitor and control the email report scheduler</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Scheduler Status</p>
+                        <p className="text-sm text-muted-foreground">
+                          {schedulerStatus?.running ? "Running - Reports will be sent automatically" : "Stopped - No reports will be sent"}
+                        </p>
+                      </div>
+                      <Badge variant={schedulerStatus?.running ? "default" : "secondary"}>
+                        {schedulerStatus?.running ? "Running" : "Stopped"}
+                      </Badge>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => schedulerControlMutation.mutate("start")}
+                        disabled={schedulerStatus?.running || schedulerControlMutation.isPending}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => schedulerControlMutation.mutate("stop")}
+                        disabled={!schedulerStatus?.running || schedulerControlMutation.isPending}
+                      >
+                        <Pause className="w-4 h-4 mr-2" />
+                        Stop
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => schedulerControlMutation.mutate("refresh")}
+                        disabled={schedulerControlMutation.isPending}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => schedulerControlMutation.mutate("force-run")}
+                        disabled={schedulerControlMutation.isPending}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Force Run All
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email Logs</CardTitle>
+                    <CardDescription>Recent email delivery history</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {emailLogsLoading ? (
+                      <div className="text-center py-4">Loading email logs...</div>
+                    ) : Array.isArray(emailLogs) && emailLogs.length > 0 ? (
                       <Table>
                         <TableHeader>
                           <TableRow>
