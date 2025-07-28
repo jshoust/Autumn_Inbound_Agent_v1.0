@@ -212,36 +212,55 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   // Extract and format the questions and responses
   const getFormattedResponses = () => {
     if (!allData || Object.keys(allData).length === 0) {
+      console.log('DetailCellRenderer: No allData available');
       return [];
     }
     
+    console.log('DetailCellRenderer: Available data keys:', Object.keys(allData));
+    
     const responses: Array<{ question: string; answer: any; type: string }> = [];
     
-    // Process all available data
+    // Process all available data - include both boolean questions and response text
     Object.entries(allData).forEach(([key, value]: [string, any]) => {
-      if (value && typeof value === 'object' && value.value !== null && value.value !== undefined && value.value !== '') {
-        let displayValue = value.value;
-        let questionText = questionMapping[key]?.question || key.replace(/_/g, ' ');
-        let type = questionMapping[key]?.type || 'text';
+      if (value && typeof value === 'object') {
+        // Check if this field has a meaningful value
+        const hasValue = value.value !== null && value.value !== undefined && value.value !== '';
         
-        // Format boolean responses
-        if (type === 'boolean') {
-          displayValue = value.value === true ? '✅ Yes' : value.value === false ? '❌ No' : displayValue;
+        // Include boolean questions even if false or null to show all asked questions
+        const isBooleanQuestion = questionMapping[key]?.type === 'boolean';
+        const isResponseText = key.includes('_response') || key.includes('_reponse'); // Note the typo in 'reponse'
+        
+        if (hasValue || isBooleanQuestion) {
+          let displayValue = value.value;
+          let questionText = questionMapping[key]?.question || key.replace(/_/g, ' ');
+          let type = questionMapping[key]?.type || 'text';
+          
+          // Format boolean responses
+          if (type === 'boolean') {
+            if (displayValue === true) {
+              displayValue = '✅ Yes';
+            } else if (displayValue === false) {
+              displayValue = '❌ No';
+            } else if (displayValue === null) {
+              displayValue = '❓ Not Asked';
+            }
+          }
+          
+          // Truncate long text responses
+          if (typeof displayValue === 'string' && displayValue.length > 100) {
+            displayValue = displayValue.substring(0, 100) + '...';
+          }
+          
+          responses.push({
+            question: questionText,
+            answer: displayValue,
+            type: type
+          });
         }
-        
-        // Truncate long text responses
-        if (typeof displayValue === 'string' && displayValue.length > 100) {
-          displayValue = displayValue.substring(0, 100) + '...';
-        }
-        
-        responses.push({
-          question: questionText,
-          answer: displayValue,
-          type: type
-        });
       }
     });
 
+    console.log('DetailCellRenderer: Processed responses:', responses.length);
     return responses;
   };
 
