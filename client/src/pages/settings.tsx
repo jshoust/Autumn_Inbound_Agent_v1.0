@@ -58,7 +58,7 @@ interface EmailLog {
 
 export default function Settings() {
   const { toast } = useToast();
-  const currentUser = getCurrentUser();
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const isAdmin = currentUser?.role === 'admin';
   
   // User management state
@@ -217,6 +217,42 @@ export default function Settings() {
     },
   });
 
+  // Email preferences mutation
+  const updateEmailPreferencesMutation = useMutation({
+    mutationFn: ({ field, value }: { field: string; value: any }) => {
+      const updateData = { [field]: value };
+      return apiRequest("PATCH", `/api/users/${currentUser?.id}/email-preferences`, updateData);
+    },
+    onSuccess: (_, { field, value }) => {
+      // Update localStorage user data
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          user[field] = value;
+          localStorage.setItem("user", JSON.stringify(user));
+          
+          // Update the state to reflect the change immediately
+          setCurrentUser({ ...user });
+        } catch (e) {
+          console.error("Failed to update localStorage user data:", e);
+        }
+      }
+      
+      // Invalidate users query if it exists
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      
+      toast({ 
+        title: field === 'emailNotifications' 
+          ? (value ? "Email notifications enabled" : "Email notifications disabled")
+          : `Report frequency set to ${value}` 
+      });
+    },
+    onError: () => {
+      toast({ title: "Failed to update preferences", variant: "destructive" });
+    },
+  });
+
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
@@ -303,9 +339,7 @@ export default function Settings() {
                 <Switch 
                   checked={currentUser?.emailNotifications ?? true}
                   onCheckedChange={(checked) => {
-                    const updateData = { emailNotifications: checked };
-                    apiRequest("PATCH", `/api/users/${currentUser?.id}/email-preferences`, updateData);
-                    toast({ title: checked ? "Email notifications enabled" : "Email notifications disabled" });
+                    updateEmailPreferencesMutation.mutate({ field: "emailNotifications", value: checked });
                   }}
                 />
               </div>
@@ -314,9 +348,7 @@ export default function Settings() {
                 <Select 
                   value={currentUser?.reportFrequency ?? "weekly"}
                   onValueChange={(value) => {
-                    const updateData = { reportFrequency: value };
-                    apiRequest("PATCH", `/api/users/${currentUser?.id}/email-preferences`, updateData);
-                    toast({ title: `Report frequency set to ${value}` });
+                    updateEmailPreferencesMutation.mutate({ field: "reportFrequency", value });
                   }}
                 >
                   <SelectTrigger>
