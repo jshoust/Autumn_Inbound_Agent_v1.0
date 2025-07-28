@@ -599,22 +599,28 @@ function extractKeyData(apiResponse: any) {
   const violationsResponse = dataCollection.question_five_reponse?.value || '';
   const scheduleResponse = dataCollection.schedule?.value || '';
   
-  // Calculate qualification status - must have CDL AND experience AND OTR available AND no violations AND work eligible
-  const qualified = hasCDL && hasExperience && otrAvailable && !hasViolations && (workEligible !== false);
+  // Calculate qualification status - ALL questions must be answered and meet requirements
+  // Any null response means they didn't answer or hung up = disqualified
+  const cdlValid = dataCollection.question_one?.value === true;
+  const experienceValid = dataCollection.Question_two?.value === true;
+  const hopperValid = dataCollection.Question_three?.value === true;
+  const otrValid = dataCollection.question_four?.value === true;
+  const violationsValid = dataCollection.question_five?.value === false || dataCollection.question_five?.value === null; // null is acceptable for violations
+  const workEligibleValid = dataCollection.question_six?.value === true || dataCollection.question_six?.value === null; // null is acceptable for work auth
   
-  console.log('=== EXTRACTED DATA ===');
-  console.log('First Name:', firstName);
-  console.log('Last Name:', lastName);
-  console.log('Phone:', phoneNumber);
-  console.log('Has CDL:', hasCDL, '("' + cdlResponse + '")');
-  console.log('Has Experience:', hasExperience, '("' + experienceResponse + '")');
-  console.log('Has Hopper Exp:', hasHopperExperience, '("' + hopperResponse + '")');
-  console.log('OTR Available:', otrAvailable, '("' + otrResponse + '")');
-  console.log('Has Violations:', hasViolations, '("' + violationsResponse + '")');
-  console.log('Work Eligible:', workEligible);
-  console.log('Schedule:', scheduleResponse);
-  console.log('Qualified:', qualified);
-  console.log('=== END EXTRACTION ===');
+  // Must have all critical answers: CDL=true, Experience=true, Hopper=true, OTR=true
+  // Violations and work eligibility can be null (not asked) without disqualifying
+  const qualified = cdlValid && experienceValid && hopperValid && otrValid && violationsValid && workEligibleValid;
+  
+  console.log('=== QUALIFICATION VALIDATION ===');
+  console.log('CDL Valid:', cdlValid, '(response: "' + cdlResponse + '")');
+  console.log('Experience Valid:', experienceValid, '(response: "' + experienceResponse + '")');
+  console.log('Hopper Valid:', hopperValid, '(response: "' + hopperResponse + '")');
+  console.log('OTR Valid:', otrValid, '(response: "' + otrResponse + '")');
+  console.log('Violations Valid:', violationsValid, '(response: "' + violationsResponse + '")');
+  console.log('Work Eligible Valid:', workEligibleValid, '(value:', workEligible + ')');
+  console.log('FINAL QUALIFIED STATUS:', qualified);
+  console.log('=== END QUALIFICATION ===');
   
   return {
     firstName,
