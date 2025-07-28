@@ -327,10 +327,10 @@ export default function Settings() {
       <Header />
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-6">
-          <div>
+              <div>
             <h1 className="text-3xl font-bold">Settings</h1>
             <p className="text-muted-foreground">Manage system settings and configurations</p>
-          </div>
+              </div>
 
           <Tabs defaultValue="profile" className="space-y-4">
             <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-1'}`}>
@@ -455,40 +455,40 @@ export default function Settings() {
                       <CardTitle>User Management</CardTitle>
                       <CardDescription>Manage system users and their permissions</CardDescription>
                     </div>
-                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                      <DialogTrigger asChild>
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
                         <Button onClick={() => { setEditingUser(null); resetUserForm(); }}>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Add User
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add User
+                    </Button>
+                  </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
                           <DialogTitle>{editingUser ? 'Edit User' : 'Create New User'}</DialogTitle>
-                          <DialogDescription>
+                    <DialogDescription>
                             {editingUser ? 'Update user information and permissions' : 'Add a new user to the system'}
-                          </DialogDescription>
-                        </DialogHeader>
+                    </DialogDescription>
+                  </DialogHeader>
                         <form onSubmit={handleUserSubmit} className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
-                            <Input
-                              id="username"
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
                               value={userFormData.username}
                               onChange={(e) => setUserFormData(prev => ({ ...prev, username: e.target.value }))}
-                              required
-                            />
-                          </div>
+                        required
+                      />
+                    </div>
                           <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                              id="email"
-                              type="email"
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
                               value={userFormData.email}
                               onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
-                              required
-                            />
-                          </div>
+                        required
+                      />
+                    </div>
                           <div className="space-y-2">
                             <Label htmlFor="password">Password {editingUser && "(leave blank to keep current)"}</Label>
                             <Input
@@ -500,21 +500,21 @@ export default function Settings() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="role">Role</Label>
+                      <Label htmlFor="role">Role</Label>
                             <Select 
                               value={userFormData.role} 
                               onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}
                             >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
                                 <SelectItem value="recruiter">Recruiter</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
                               <Label>Email Notifications</Label>
@@ -541,83 +541,83 @@ export default function Settings() {
                                 <SelectItem value="disabled">Disabled</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              type="button" 
-                              variant="outline" 
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
                               onClick={() => setIsCreateDialogOpen(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              type="submit" 
-                              disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                            >
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                      >
                               {editingUser ? 'Update' : 'Create'} User
-                            </Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+                </Dialog>
                   </div>
-                </CardHeader>
-                <CardContent>
+            </CardHeader>
+            <CardContent>
                   {usersLoading ? (
-                    <div className="text-center py-4">Loading users...</div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Username</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
+                <div className="text-center py-4">Loading users...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
                           <TableHead>Email Reports</TableHead>
                           <TableHead>Frequency</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {Array.isArray(users) && users.map((user: User) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.username}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.isArray(users) && users.map((user: User) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
                               <Badge variant={
                                 user.role === 'admin' ? 'destructive' :
                                 user.role === 'manager' ? 'default' : 'secondary'
                               }>
-                                {user.role}
+                            {user.role}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               {user.emailNotifications ? "✅" : "❌"}
-                            </TableCell>
-                            <TableCell>
+                        </TableCell>
+                        <TableCell>
                               <Badge variant="outline">{user.reportFrequency || 'weekly'}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(user.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                   onClick={() => handleUserEdit(user)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteUserMutation.mutate(user.id)}
-                                  disabled={deleteUserMutation.isPending}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteUserMutation.mutate(user.id)}
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -850,14 +850,14 @@ export default function Settings() {
                                     <Send className="w-4 h-4" />
                                   </Button>
                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
                 <Card>
                   <CardHeader>
