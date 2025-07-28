@@ -599,8 +599,8 @@ function extractKeyData(apiResponse: any) {
   const violationsResponse = dataCollection.question_five_reponse?.value || '';
   const scheduleResponse = dataCollection.schedule?.value || '';
   
-  // Calculate qualification status - must have CDL AND experience AND no violations AND work eligible
-  const qualified = hasCDL && hasExperience && !hasViolations && (workEligible !== false);
+  // Calculate qualification status - must have CDL AND experience AND OTR available AND no violations AND work eligible
+  const qualified = hasCDL && hasExperience && otrAvailable && !hasViolations && (workEligible !== false);
   
   console.log('=== EXTRACTED DATA ===');
   console.log('First Name:', firstName);
