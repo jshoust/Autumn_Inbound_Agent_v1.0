@@ -320,54 +320,7 @@ export default function Settings() {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Preferences</CardTitle>
-              <CardDescription>Manage your email notification settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive report emails</p>
-                </div>
-                <Switch 
-                  checked={currentUser?.emailNotifications ?? true}
-                  onCheckedChange={(checked) => {
-                    updateEmailPreferencesMutation.mutate({ field: "emailNotifications", value: checked });
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Report Frequency</Label>
-                <Select 
-                  value={currentUser?.reportFrequency ?? "weekly"}
-                  onValueChange={(value) => {
-                    updateEmailPreferencesMutation.mutate({ field: "reportFrequency", value });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="disabled">Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -379,24 +332,122 @@ export default function Settings() {
             <p className="text-muted-foreground">Manage system settings and configurations</p>
           </div>
 
-          <Tabs defaultValue="users" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                Users
+          <Tabs defaultValue="profile" className="space-y-4">
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-1'}`}>
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <SettingsIcon className="w-4 h-4" />
+                Profile
               </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value="scheduler" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Scheduler
-              </TabsTrigger>
+              {isAdmin && (
+                <>
+                  <TabsTrigger value="users" className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Users
+                  </TabsTrigger>
+                  <TabsTrigger value="reports" className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Reports
+                  </TabsTrigger>
+                  <TabsTrigger value="scheduler" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Scheduler
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
 
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile & Email Preferences</CardTitle>
+                  <CardDescription>Manage your profile and email notification settings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* User Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">User Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Username</Label>
+                        <p className="text-sm text-muted-foreground mt-1">{currentUser?.username}</p>
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <p className="text-sm text-muted-foreground mt-1">{currentUser?.email || 'Not set'}</p>
+                      </div>
+                      <div>
+                        <Label>Role</Label>
+                        <p className="text-sm text-muted-foreground mt-1 capitalize">{currentUser?.role}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-medium mb-4">Email Preferences</h3>
+                    <div className="space-y-4">
+                      {/* Email Reports Checkbox */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <Label className="text-base font-medium">Email Reports</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Receive scheduled summary reports with call analytics and insights based on configured frequency
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={currentUser?.emailNotifications ?? true}
+                          onCheckedChange={(checked) => {
+                            updateEmailPreferencesMutation.mutate({ field: "emailNotifications", value: checked });
+                          }}
+                        />
+                      </div>
+
+                      {/* Report Frequency (only show if email reports enabled) */}
+                      {currentUser?.emailNotifications && (
+                        <div className="ml-4 space-y-2">
+                          <Label>Report Frequency</Label>
+                          <Select 
+                            value={currentUser?.reportFrequency ?? "weekly"}
+                            onValueChange={(value) => {
+                              updateEmailPreferencesMutation.mutate({ field: "reportFrequency", value });
+                            }}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Email after every call checkbox */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <Label className="text-base font-medium">Email after every call</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Receive immediate email notifications with candidate details after each qualifying call
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={currentUser?.receiveNotifications ?? true}
+                          onCheckedChange={(checked) => {
+                            updateEmailPreferencesMutation.mutate({ field: "receiveNotifications", value: checked });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Users Tab */}
-            <TabsContent value="users" className="space-y-4">
+            {isAdmin && (
+              <TabsContent value="users" className="space-y-4">
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
@@ -931,6 +982,7 @@ export default function Settings() {
                 </Card>
               </div>
             </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
