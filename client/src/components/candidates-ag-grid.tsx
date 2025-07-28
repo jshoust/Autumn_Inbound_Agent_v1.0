@@ -30,46 +30,80 @@ function StatusIcon({ value }: { value: any }) {
   if (value === false || value === 'false') {
     return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
   }
-  return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
+  if (value === null || value === undefined || value === '') {
+    return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
+  }
+  // For non-boolean values, show a text indicator
+  return <span style={{ color: '#666', fontSize: 12 }}>📝</span>;
 }
 
 // Extract question order and metadata from one candidate
 function getQuestionsMeta(candidate: any) {
   const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
   
-  // Filter for question keys that contain boolean values or null (indicating questions not yet answered)
-  const questionKeys = Object.keys(results).filter(key => {
+  // Get ALL fields from data collection results, not just boolean ones
+  const allFields = Object.keys(results).filter(key => {
     const item = results[key];
-    return item?.json_schema?.type === 'boolean' && 
-           (key.startsWith('question') || key.startsWith('Question'));
+    return item && typeof item === 'object' && item.value !== null && item.value !== undefined;
   });
   
-  // Sort question keys to ensure consistent order (question_one, Question_two, etc.)
-  const sortedKeys = questionKeys.sort((a, b) => {
+  // Sort fields to ensure consistent order
+  const sortedKeys = allFields.sort((a, b) => {
+    // Put basic info first
+    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
+    const aBasic = basicInfo.includes(a);
+    const bBasic = basicInfo.includes(b);
+    if (aBasic && !bBasic) return -1;
+    if (!aBasic && bBasic) return 1;
+    
+    // Then sort question fields by number
     const aNum = a.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
     const bNum = b.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
     
-    // Convert word numbers to numeric for proper sorting
-    const numberMap: Record<string, number> = {
-      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
-    };
+    if (aNum && bNum) {
+      // Convert word numbers to numeric for proper sorting
+      const numberMap: Record<string, number> = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+      };
+      
+      const aOrder = numberMap[aNum] || parseInt(aNum) || 999;
+      const bOrder = numberMap[bNum] || parseInt(bNum) || 999;
+      
+      return aOrder - bOrder;
+    }
     
-    const aOrder = numberMap[aNum || ''] || parseInt(aNum || '0') || 999;
-    const bOrder = numberMap[bNum || ''] || parseInt(bNum || '0') || 999;
-    
-    return aOrder - bOrder;
+    // Finally sort alphabetically
+    return a.localeCompare(b);
   });
   
-  const boolQuestions = sortedKeys.map((key, idx) => {
+  // First pass: identify questions and their numbers
+  const questionNumbers = new Map<string, number>();
+  let questionCount = 0;
+  
+  sortedKeys.forEach(key => {
+    const isQuestion = key.toLowerCase().includes('question') && !key.toLowerCase().includes('response');
+    if (isQuestion) {
+      questionCount++;
+      questionNumbers.set(key, questionCount);
+    }
+  });
+  
+  const questionMeta = sortedKeys.map((key, idx) => {
     const item = results[key];
+    const isQuestion = key.toLowerCase().includes('question') && !key.toLowerCase().includes('response');
+    const isBasic = ['First_Name', 'Last_Name', 'Phone_number'].includes(key);
+    
     return {
       key: key,
-      label: `Q${idx + 1}`,
-      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key
+      label: isBasic ? key.replace('_', ' ') : (isQuestion ? `Q${questionNumbers.get(key)}` : key),
+      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key,
+      type: item.json_schema?.type || 'text',
+      isQuestion: isQuestion,
+      isBasic: isBasic
     };
   });
   
-  return boolQuestions;
+  return questionMeta;
 }
 
 // Questions Reference Card Component
@@ -190,39 +224,82 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const candidate = data._meta;
   const allData = data._all;
   
-  // Define proper question mapping with descriptions
-  const questionMapping: Record<string, { question: string; type: string }> = {
-    'First_Name': { question: 'What is your first name?', type: 'text' },
-    'Last_Name': { question: 'What is your last name?', type: 'text' },
-    'Phone_number': { question: 'What is your phone number?', type: 'text' },
-    'question_one': { question: 'Do you currently have a valid Class A commercial driver\'s license?', type: 'boolean' },
-    'question_one_response': { question: 'CDL Response Details', type: 'text' },
-    'Question_two': { question: 'Do you have at least 24 months of experience driving a tractor-trailer?', type: 'boolean' },
-    'question_two_response': { question: 'Experience Response Details', type: 'text' },
-    'Question_three': { question: 'Do you have verifiable experience with hoppers?', type: 'boolean' },
-    'question_three_response': { question: 'Hopper Experience Details', type: 'text' },
-    'question_four': { question: 'Are you able to be over the road for 3 weeks at a time?', type: 'boolean' },
-    'Question_four_response': { question: 'OTR Availability Details', type: 'text' },
-    'question_five': { question: 'Have you had any serious traffic violations in the last 3 years?', type: 'boolean' },
-    'question_five_reponse': { question: 'Traffic Violations Details', type: 'text' },
-    'question_six': { question: 'Are you legally eligible to work in the United States?', type: 'boolean' },
-    'schedule': { question: 'Interview Schedule Preference', type: 'text' }
-  };
-
-  // Extract and format the questions and responses
+  // Extract and format the questions and responses dynamically
   const getFormattedResponses = () => {
     if (!allData || Object.keys(allData).length === 0) {
       return [];
     }
     
-    const responses: Array<{ question: string; answer: any; type: string }> = [];
+    const responses: Array<{ question: string; answer: any; type: string; key: string }> = [];
     
     // Process all available data
     Object.entries(allData).forEach(([key, value]: [string, any]) => {
       if (value && typeof value === 'object' && value.value !== null && value.value !== undefined && value.value !== '') {
         let displayValue = value.value;
-        let questionText = questionMapping[key]?.question || key.replace(/_/g, ' ');
-        let type = questionMapping[key]?.type || 'text';
+        let questionText = '';
+        let type = 'text';
+        
+        // Extract question text from json_schema.description
+        if (value.json_schema?.description) {
+          const description = value.json_schema.description;
+          
+          // Extract the actual question from the description
+          let question = '';
+          
+          // Pattern 1: Text in double quotes (remove the quotes)
+          const doubleQuoteMatch = description.match(/"([^"]+)"/);
+          if (doubleQuoteMatch) {
+            question = doubleQuoteMatch[1];
+          }
+          // Pattern 2: Text after "question:" or similar
+          else if (description.includes('question')) {
+            const lines = description.split('\n');
+            const questionLine = lines.find(line => 
+              line.toLowerCase().includes('question') && line.includes('?')
+            );
+            if (questionLine) {
+              question = questionLine.replace(/.*question[:\s]*/i, '').trim();
+            }
+          }
+          // Pattern 3: Any line ending with question mark
+          else {
+            const lines = description.split('\n');
+            const questionLine = lines.find(line => line.trim().endsWith('?'));
+            if (questionLine) {
+              question = questionLine.trim();
+            }
+          }
+          
+          // Fallback to last non-empty line
+          if (!question) {
+            const lines = description.split('\n').filter(line => line.trim());
+            question = lines[lines.length - 1]?.trim() || key;
+          }
+          
+          // Strip outer quotes
+          function stripOuterQuotes(str: string) {
+            let cleaned = str.trim();
+            while (
+              (
+                (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+                (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+                (cleaned.startsWith('\u201C') && cleaned.endsWith('\u201D')) ||
+                (cleaned.startsWith('\u2018') && cleaned.endsWith('\u2019')) ||
+                (cleaned.startsWith('`') && cleaned.endsWith('`'))
+              ) && cleaned.length > 1
+            ) {
+              cleaned = cleaned.substring(1, cleaned.length - 1).trim();
+            }
+            return cleaned;
+          }
+          
+          questionText = stripOuterQuotes(question);
+        } else {
+          questionText = key.replace(/_/g, ' ');
+        }
+        
+        // Determine type from json_schema
+        type = value.json_schema?.type || 'text';
         
         // Format boolean responses
         if (type === 'boolean') {
@@ -237,12 +314,25 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
         responses.push({
           question: questionText,
           answer: displayValue,
-          type: type
+          type: type,
+          key: key
         });
       }
     });
 
-    return responses;
+    // Sort responses to put basic info first, then questions
+    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
+    const questionKeys = Object.keys(allData).filter(key => 
+      key.toLowerCase().includes('question') || key.toLowerCase().includes('schedule')
+    );
+    
+    return responses.sort((a, b) => {
+      const aBasic = basicInfo.includes(a.key);
+      const bBasic = basicInfo.includes(b.key);
+      if (aBasic && !bBasic) return -1;
+      if (!aBasic && bBasic) return 1;
+      return a.key.localeCompare(b.key);
+    });
   };
 
   const formattedResponses = getFormattedResponses();
@@ -259,12 +349,12 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
             </div>
           </div>
           
-                     {formattedResponses.length > 0 ? (
-             <div className="space-y-3 max-h-56 overflow-y-auto">
+          {formattedResponses.length > 0 ? (
+            <div className="space-y-3 max-h-56 overflow-y-auto">
               {formattedResponses.map((item, index) => (
-                <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                <div key={item.key} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                   <div className="text-xs font-medium text-slate-600 mb-1">
-                    Q{index + 1}: {item.question}
+                    {item.key.includes('question') ? `Q${index + 1}` : item.key}: {item.question}
                   </div>
                   <div className={`text-sm font-medium ${
                     item.type === 'boolean' 
@@ -456,9 +546,11 @@ export default function CandidatesAgGrid({
         return entry ? entry.value : null;
       };
       
-      // Create question columns dynamically
+      // Create question columns dynamically (only for questions, not basic info)
       const questionColumns = Object.fromEntries(
-        questionMeta.map(q => [q.label, getField(q.key)])
+        questionMeta
+          .filter(q => q.isQuestion)
+          .map(q => [q.label, getField(q.key)])
       );
       
       // Main row
@@ -485,7 +577,7 @@ export default function CandidatesAgGrid({
           phone: '',
           callTime: '',
           qualified: null,
-          ...Object.fromEntries(questionMeta.map(q => [q.label, ''])),
+          ...Object.fromEntries(questionMeta.filter(q => q.isQuestion).map(q => [q.label, ''])),
           _all: results,
           _meta: cand,
           _isExpanded: true,
@@ -550,8 +642,15 @@ export default function CandidatesAgGrid({
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     
+    // Handle question columns
     if (questionMeta.some(q => q.label === colDef.field)) {
-      return <StatusIcon value={params.value} />;
+      const questionInfo = questionMeta.find(q => q.label === colDef.field);
+      if (questionInfo?.type === 'boolean') {
+        return <StatusIcon value={params.value} />;
+      } else {
+        // For non-boolean questions, show a text indicator
+        return <StatusIcon value={params.value} />;
+      }
     }
     
     if (colDef.field === 'qualified') {
@@ -593,15 +692,18 @@ export default function CandidatesAgGrid({
       minWidth: 120,
       cellRenderer: CellRenderer
     },
-    ...questionMeta.map(q => ({
-      headerName: q.label,
-      field: q.label,
-      width: 70,
-      minWidth: 60,
-      maxWidth: 80,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' }
-    })),
+    // Only show question columns (not basic info)
+    ...questionMeta
+      .filter(q => q.isQuestion)
+      .map(q => ({
+        headerName: q.label,
+        field: q.label,
+        width: 70,
+        minWidth: 60,
+        maxWidth: 80,
+        cellRenderer: CellRenderer,
+        cellStyle: { textAlign: 'center' }
+      })),
     {
       headerName: 'Status',
       field: 'qualified',

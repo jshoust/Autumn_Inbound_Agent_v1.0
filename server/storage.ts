@@ -578,68 +578,39 @@ function extractKeyData(apiResponse: any) {
   });
   console.log('=== END DATA COLLECTION ===');
   
-  // Extract structured data from ElevenLabs analysis
+  // Extract basic info for direct columns
   const firstName = dataCollection.First_Name?.value || '';
   const lastName = dataCollection.Last_Name?.value || '';
   const phoneNumber = dataCollection.Phone_number?.value || '';
   
-  // Question responses (boolean values)
+  // Calculate qualification status - must have CDL AND experience AND no violations AND work eligible
   const hasCDL = dataCollection.question_one?.value === true;
   const hasExperience = dataCollection.Question_two?.value === true;
-  const hasHopperExperience = dataCollection.Question_three?.value === true;
-  const otrAvailable = dataCollection.question_four?.value === true;
   const hasViolations = dataCollection.question_five?.value === true;
   const workEligible = dataCollection.question_six?.value === true;
-  
-  // Question response text
-  const cdlResponse = dataCollection.question_one_response?.value || '';
-  const experienceResponse = dataCollection.question_two_response?.value || '';
-  const hopperResponse = dataCollection.question_three_response?.value || '';
-  const otrResponse = dataCollection.Question_four_response?.value || '';
-  const violationsResponse = dataCollection.question_five_reponse?.value || '';
-  const scheduleResponse = dataCollection.schedule?.value || '';
-  
-  // Calculate qualification status - must have CDL AND experience AND no violations AND work eligible
   const qualified = hasCDL && hasExperience && !hasViolations && (workEligible !== false);
   
   console.log('=== EXTRACTED DATA ===');
   console.log('First Name:', firstName);
   console.log('Last Name:', lastName);
   console.log('Phone:', phoneNumber);
-  console.log('Has CDL:', hasCDL, '("' + cdlResponse + '")');
-  console.log('Has Experience:', hasExperience, '("' + experienceResponse + '")');
-  console.log('Has Hopper Exp:', hasHopperExperience, '("' + hopperResponse + '")');
-  console.log('OTR Available:', otrAvailable, '("' + otrResponse + '")');
-  console.log('Has Violations:', hasViolations, '("' + violationsResponse + '")');
-  console.log('Work Eligible:', workEligible);
-  console.log('Schedule:', scheduleResponse);
   console.log('Qualified:', qualified);
   console.log('=== END EXTRACTION ===');
   
   return {
+    // Basic info for direct columns
     firstName,
     lastName,
     phoneNumber,
-    cdlA: hasCDL,
-    experience24Months: hasExperience,
-    hopperExperience: hasHopperExperience,
-    otrAvailable: otrAvailable,
-    cleanRecord: !hasViolations,
-    workEligible: workEligible,
-    interviewSchedule: scheduleResponse,
-    callDuration: transcript.length > 0 ? transcript[transcript.length - 1]?.time_in_call_secs || 0 : 0,
-    callCost: null,
-    callSuccessful: apiResponse.analysis?.call_successful === 'success',
     qualified,
-    // Store response text for detailed view
-    responses: {
-      cdl: cdlResponse,
-      experience: experienceResponse,
-      hopper: hopperResponse,
-      otr: otrResponse,
-      violations: violationsResponse,
-      schedule: scheduleResponse
-    }
+    
+    // Store the COMPLETE data_collection_results for frontend processing
+    dataCollectionResults: dataCollection,
+    
+    // Additional metadata
+    callDuration: transcript.length > 0 ? transcript[transcript.length - 1]?.time_in_call_secs || 0 : 0,
+    callSuccessful: apiResponse.analysis?.call_successful === 'success',
+    transcript: transcript
   };
 }
 

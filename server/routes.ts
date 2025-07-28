@@ -303,10 +303,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         qualified: record.qualified,
         agentId: record.agentId,
         createdAt: record.createdAt,
-        // Extract additional data from JSONB fields
+        // Map the extracted data properly for frontend consumption
         transcript: record.rawData?.transcript || [],
-        dataCollection: record.extractedData || {},
-        rawConversationData: record.rawData || {}
+        dataCollection: record.extractedData?.dataCollectionResults || {},
+        rawConversationData: {
+          analysis: {
+            data_collection_results: record.extractedData?.dataCollectionResults || {}
+          },
+          transcript: record.rawData?.transcript || []
+        }
       }));
       
       // Apply qualified filter if specified
