@@ -598,6 +598,40 @@ This Excel file contains detailed call transcripts, Q&A responses, and qualifica
       };
     }
   }
+
+  private generateQualificationDetailsTable(callRecord: any): string {
+    const extractedData = callRecord.extractedData || {};
+    const hasExperience = extractedData.hasExperience;
+    const cdlLicense = extractedData.cdlLicense;
+    const experienceYears = extractedData.experienceYears;
+    
+    return `
+      <h3 style="color: #1e293b;">Qualification Summary</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr style="background-color: #f9fafb;">
+          <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">CDL License:</td>
+          <td style="padding: 10px; border: 1px solid #e5e7eb;">${cdlLicense || 'Not specified'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Experience:</td>
+          <td style="padding: 10px; border: 1px solid #e5e7eb;">${hasExperience ? 'Yes' : 'Not specified'}</td>
+        </tr>
+        <tr style="background-color: #f9fafb;">
+          <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Years of Experience:</td>
+          <td style="padding: 10px; border: 1px solid #e5e7eb;">${experienceYears || 'Not specified'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">Qualification Status:</td>
+          <td style="padding: 10px; border: 1px solid #e5e7eb;">
+            <span style="color: ${callRecord.qualified ? '#059669' : '#dc2626'}; font-weight: bold;">
+              ${callRecord.qualified ? 'Qualified' : 'Needs Review'}
+            </span>
+          </td>
+        </tr>
+      </table>
+    `;
+  }
+
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     if (!this.isEnabled) {
       return { success: false, error: 'Postmark not configured' };
