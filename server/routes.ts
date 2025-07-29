@@ -19,6 +19,25 @@ import { postmarkService } from "./postmark";
 import { reportGenerator } from "./report-generator";
 import { reportScheduler } from "./scheduler";
 import { insertReportsConfigSchema, updateReportsConfigSchema } from "@shared/schema";
+import { CalendarService } from './calendar-service.js';
+
+// Helper function to get calendar service
+async function getCalendarService(): Promise<CalendarService> {
+  const config = await storage.getCalendarConfig();
+  
+  if (!config || !config.enabled) {
+    throw new Error('Calendar integration is not configured or enabled');
+  }
+
+  return new CalendarService({
+    clientId: config.clientId!,
+    clientSecret: config.clientSecret!,
+    tenantId: config.tenantId!,
+    recruiterEmail: config.recruiterEmail || 'info@neurovista.ai',
+    defaultDurationMinutes: config.defaultDurationMinutes || 30,
+    timezone: config.timezone || 'America/Chicago'
+  });
+}
 
 // Webhook signature verification - proper ElevenLabs format
 function verifyElevenLabsWebhook(body: Buffer, signature: string, secret: string): boolean {
@@ -407,6 +426,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching stats:', error);
       res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
+  // Calendar Configuration Routes
+  app.get('/api/calendar/config', requireAuth, async (req, res) => {
+    try {
+      const config = await storage.getCalendarConfig();
+      res.json(config);
+    } catch (error) {
+      console.error('Error fetching calendar config:', error);
+      res.status(500).json({ error: 'Failed to fetch calendar configuration' });
+    }
+  });
+
+  app.post('/api/calendar/config', requireAuth, async (req, res) => {
+    try {
+      const config = await storage.updateCalendarConfig(req.body);
+      res.json(config);
+    } catch (error) {
+      console.error('Error updating calendar config:', error);
+      res.status(500).json({ error: 'Failed to update calendar configuration' });
+    }
+  });
+
+  // Calendar Integration Routes
+  app.get('/api/calendar/slots', requireAuth, async (req, res) => {
+    try {
+      const { days = 7 } = req.query;
+      const calendarService = await getCalendarService();
+      const slots = await calendarService.getAvailableSlots(parseInt(days as string));
+      res.json(slots);
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      res.status(500).json({ error: 'Failed to fetch available slots' });
+    }
+  });
+
+  app.post('/api/calendar/book-interview', requireAuth, async (req, res) => {
+    try {
+      const { candidateId, candidateName, candidatePhone, candidateEmail } = req.body;
+      
+      const calendarService = await getCalendarService();
+      const interview = await calendarService.autoBookInterview({
+        name: candidateName,
+        phone: candidatePhone,
+        email: candidateEmail
+      });
+
+      // Store in database
+      await storage.createScheduledInterview({
+        candidateId,
+        candidateName,
+        candidatePhone,
+        candidateEmail,
+        subject: interview.subject,
+        startTime: interview.startTime,
+        endTime: interview.endTime,
+        calendarEventId: interview.calendarEventId,
+        recruiterEmail: interview.recruiterEmail
+      });
+
+      res.json(interview);
+    } catch (error) {
+      console.error('Error booking interview:', error);
+      res.status(500).json({ error: 'Failed to book interview' });
+    }
+  });
+
+  app.get('/api/calendar/interviews', requireAuth, async (req, res) => {
+    try {
+      const interviews = await storage.getScheduledInterviews();
+      res.json(interviews);
+    } catch (error) {
+      console.error('Error fetching scheduled interviews:', error);
+      res.status(500).json({ error: 'Failed to fetch scheduled interviews' });
+    }
+  });
+
+  app.get('/api/calendar/next-interview', requireAuth, async (req, res) => {
+    try {
+      const calendarService = await getCalendarService();
+      const nextInterview = await calendarService.getNextAppointment();
+      res.json(nextInterview);
+    } catch (error) {
+      console.error('Error fetching next interview:', error);
+      res.status(500).json({ error: 'Failed to fetch next interview' });
+    }
+  });
+
+  // Auto-booking trigger for qualified candidates
+  app.post('/api/candidates/:id/auto-book', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const candidate = await storage.getCallRecord(parseInt(id));
+      
+      if (!candidate) {
+        return res.status(404).json({ error: 'Candidate not found' });
+      }
+
+      // Check if candidate is qualified
+      if (candidate.qualified !== true) {
+        return res.status(400).json({ error: 'Candidate must be qualified to auto-book interview' });
+      }
+
+      // Extract candidate info from call data
+      const callData = candidate.rawData?.analysis?.data_collection_results || {};
+      const candidateName = `${callData.First_Name?.value || ''} ${callData.Last_Name?.value || ''}`.trim();
+      const candidatePhone = callData.Phone_number?.value || candidate.phone || '';
+      const candidateEmail = callData.Email?.value; // If you collect email
+
+      if (!candidateName || !candidatePhone) {
+        return res.status(400).json({ error: 'Missing candidate name or phone number' });
+      }
+
+      const calendarService = await getCalendarService();
+      const interview = await calendarService.autoBookInterview({
+        name: candidateName,
+        phone: candidatePhone,
+        email: candidateEmail
+      });
+
+      // Store in database
+      await storage.createScheduledInterview({
+        candidateId: parseInt(id),
+        candidateName,
+        candidatePhone,
+        candidateEmail,
+        subject: interview.subject,
+        startTime: interview.startTime,
+        endTime: interview.endTime,
+        calendarEventId: interview.calendarEventId,
+        recruiterEmail: interview.recruiterEmail
+      });
+
+      res.json({
+        success: true,
+        interview,
+        message: 'Interview scheduled successfully'
+      });
+    } catch (error) {
+      console.error('Error auto-booking interview:', error);
+      res.status(500).json({ error: 'Failed to auto-book interview' });
     }
   });
 

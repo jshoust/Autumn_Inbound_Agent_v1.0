@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, UserPlus, Edit, Mail, Clock, Settings as SettingsIcon, Play, Pause, RefreshCw, Send, TestTube, Plus } from "lucide-react";
+import { Trash2, UserPlus, Edit, Mail, Clock, Settings as SettingsIcon, Play, Pause, RefreshCw, Send, TestTube, Plus, Loader2, Save } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentUser } from "@/lib/auth";
@@ -112,6 +112,29 @@ export default function Settings() {
     queryKey: ["/api/reports/scheduler/status"],
     enabled: isAdmin,
     refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Calendar Configuration State
+  const [calendarConfig, setCalendarConfig] = useState<any>(null);
+  const [calendarConfigMutation, setCalendarConfigMutation] = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/calendar/config", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/config"] });
+      toast({ title: "Calendar configuration saved" });
+    },
+    onError: () => {
+      toast({ title: "Failed to save calendar configuration", variant: "destructive" });
+    },
+  });
+
+  const [calendarTestMutation, setCalendarTestMutation] = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/calendar/test-connection"),
+    onSuccess: () => {
+      toast({ title: "Calendar connection test successful" });
+    },
+    onError: () => {
+      toast({ title: "Calendar connection test failed", variant: "destructive" });
+    },
   });
 
   // User Mutations
@@ -320,7 +343,13 @@ export default function Settings() {
     }
   };
 
+  const handleCalendarConfigSave = () => {
+    calendarConfigMutation.mutate(calendarConfig);
+  };
 
+  const handleCalendarTest = () => {
+    calendarTestMutation.mutate();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -631,269 +660,13 @@ export default function Settings() {
 
             {/* Reports Tab */}
             {isAdmin && (
-            <TabsContent value="reports" className="space-y-4">
-              <div className="grid gap-4">
+            <TabsContent value="reports" className="space-y-6">
+              <div className="grid gap-6">
+                {/* Reports Configuration */}
                 <Card>
                   <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>Report Configurations</CardTitle>
-                        <CardDescription>Manage automated email report settings</CardDescription>
-                      </div>
-                      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => { setEditingReport(null); resetReportForm(); }}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Report
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{editingReport ? 'Edit Report' : 'Create New Report'}</DialogTitle>
-                            <DialogDescription>
-                              {editingReport ? 'Update report configuration' : 'Create a new automated report'}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form onSubmit={handleReportSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="reportName">Report Name</Label>
-                              <Input
-                                id="reportName"
-                                value={reportFormData.name}
-                                onChange={(e) => setReportFormData(prev => ({ ...prev, name: e.target.value }))}
-                                placeholder="Weekly Summary Report"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="frequency">Frequency</Label>
-                              <Select 
-                                value={reportFormData.frequency} 
-                                onValueChange={(value) => setReportFormData(prev => ({ ...prev, frequency: value }))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="hourOfDay">Hour (24h format)</Label>
-                                <Input
-                                  id="hourOfDay"
-                                  type="number"
-                                  min="0"
-                                  max="23"
-                                  value={reportFormData.hourOfDay}
-                                  onChange={(e) => setReportFormData(prev => ({ ...prev, hourOfDay: parseInt(e.target.value) }))}
-                                />
-                              </div>
-                              {reportFormData.frequency === 'weekly' && (
-                                <div className="space-y-2">
-                                  <Label htmlFor="dayOfWeek">Day of Week</Label>
-                                  <Select 
-                                    value={reportFormData.dayOfWeek.toString()} 
-                                    onValueChange={(value) => setReportFormData(prev => ({ ...prev, dayOfWeek: parseInt(value) }))}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="0">Sunday</SelectItem>
-                                      <SelectItem value="1">Monday</SelectItem>
-                                      <SelectItem value="2">Tuesday</SelectItem>
-                                      <SelectItem value="3">Wednesday</SelectItem>
-                                      <SelectItem value="4">Thursday</SelectItem>
-                                      <SelectItem value="5">Friday</SelectItem>
-                                      <SelectItem value="6">Saturday</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                              {reportFormData.frequency === 'monthly' && (
-                                <div className="space-y-2">
-                                  <Label htmlFor="dayOfMonth">Day of Month</Label>
-                                  <Input
-                                    id="dayOfMonth"
-                                    type="number"
-                                    min="1"
-                                    max="31"
-                                    value={reportFormData.dayOfMonth}
-                                    onChange={(e) => setReportFormData(prev => ({ ...prev, dayOfMonth: parseInt(e.target.value) }))}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="subjectTemplate">Email Subject Template</Label>
-                              <Input
-                                id="subjectTemplate"
-                                value={reportFormData.subjectTemplate}
-                                onChange={(e) => setReportFormData(prev => ({ ...prev, subjectTemplate: e.target.value }))}
-                                placeholder="TruckRecruit Pro - {period} Report"
-                              />
-                              <p className="text-sm text-muted-foreground">
-                                Use {'{period}'}, {'{totalCalls}'}, {'{qualifiedLeads}'}, {'{conversionRate}'} as variables
-                              </p>
-                            </div>
-                            <div className="space-y-4">
-                              <Label>Report Content</Label>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <Label>Include Call Details</Label>
-                                    <p className="text-sm text-muted-foreground">Show individual call records</p>
-                                  </div>
-                                  <Switch
-                                    checked={reportFormData.includeCallDetails}
-                                    onCheckedChange={(checked) => setReportFormData(prev => ({ ...prev, includeCallDetails: checked }))}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <Label>Include Charts</Label>
-                                    <p className="text-sm text-muted-foreground">Add visual charts (future feature)</p>
-                                  </div>
-                                  <Switch
-                                    checked={reportFormData.includeCharts}
-                                    onCheckedChange={(checked) => setReportFormData(prev => ({ ...prev, includeCharts: checked }))}
-                                    disabled
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={() => setIsReportDialogOpen(false)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button 
-                                type="submit" 
-                                disabled={createReportMutation.isPending || updateReportMutation.isPending}
-                              >
-                                {editingReport ? 'Update' : 'Create'} Report
-                              </Button>
-                            </div>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {reportsLoading ? (
-                      <div className="text-center py-4">Loading report configurations...</div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Frequency</TableHead>
-                            <TableHead>Schedule</TableHead>
-                            <TableHead>Last Sent</TableHead>
-                            <TableHead>Next Send</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {Array.isArray(reportConfigs) && reportConfigs.map((report: ReportConfig) => (
-                            <TableRow key={report.id}>
-                              <TableCell className="font-medium">{report.name}</TableCell>
-                              <TableCell>
-                                <Badge variant={report.enabled ? "default" : "secondary"}>
-                                  {report.enabled ? "Enabled" : "Disabled"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{report.frequency}</TableCell>
-                              <TableCell>
-                                {report.frequency === 'daily' && `${report.hourOfDay}:00`}
-                                {report.frequency === 'weekly' && `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][report.dayOfWeek || 1]} ${report.hourOfDay}:00`}
-                                {report.frequency === 'monthly' && `${report.dayOfMonth}th ${report.hourOfDay}:00`}
-                              </TableCell>
-                              <TableCell>
-                                {report.lastSentAt ? new Date(report.lastSentAt).toLocaleDateString() : 'Never'}
-                              </TableCell>
-                              <TableCell>
-                                {report.nextSendAt ? new Date(report.nextSendAt).toLocaleDateString() : 'N/A'}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleReportEdit(report)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteReportMutation.mutate(report.id)}
-                                    disabled={deleteReportMutation.isPending}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => apiRequest("POST", `/api/reports/send/${report.id}`)}
-                                    title="Send Now"
-                                  >
-                                    <Send className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Test Reports</CardTitle>
-                    <CardDescription>Send test reports to verify email setup</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex space-x-2">
-                      <Input
-                        placeholder="Enter email address for test"
-                        value={testEmail}
-                        onChange={(e) => setTestEmail(e.target.value)}
-                        type="email"
-                      />
-                      <Button 
-                        onClick={() => testReportMutation.mutate({ recipientEmail: testEmail })}
-                        disabled={!testEmail || testReportMutation.isPending}
-                      >
-                        <TestTube className="w-4 h-4 mr-2" />
-                        Send Test
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-            )}
-
-            {/* Scheduler Tab */}
-            {isAdmin && (
-            <TabsContent value="scheduler" className="space-y-4">
-              <div className="grid gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Scheduler Status</CardTitle>
-                    <CardDescription>Monitor and control the email report scheduler</CardDescription>
+                    <CardTitle>Email Reports</CardTitle>
+                    <CardDescription>Configure automated email reports and scheduling</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -939,6 +712,139 @@ export default function Settings() {
                       >
                         <Send className="w-4 h-4 mr-2" />
                         Force Run All
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Calendar Integration */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Calendar Integration</CardTitle>
+                    <CardDescription>Configure Microsoft 365 calendar auto-booking for qualified candidates</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Auto-Booking Status</p>
+                        <p className="text-sm text-muted-foreground">
+                          {calendarConfig?.enabled ? "Enabled - Interviews will be auto-scheduled" : "Disabled - Manual scheduling only"}
+                        </p>
+                      </div>
+                      <Badge variant={calendarConfig?.enabled ? "default" : "secondary"}>
+                        {calendarConfig?.enabled ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="recruiterEmail">Recruiter Email</Label>
+                        <Input
+                          id="recruiterEmail"
+                          value={calendarConfig?.recruiterEmail || "info@neurovista.ai"}
+                          onChange={(e) => setCalendarConfig(prev => ({ ...prev, recruiterEmail: e.target.value }))}
+                          placeholder="info@neurovista.ai"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="duration">Interview Duration (minutes)</Label>
+                        <Input
+                          id="duration"
+                          type="number"
+                          value={calendarConfig?.defaultDurationMinutes || 30}
+                          onChange={(e) => setCalendarConfig(prev => ({ ...prev, defaultDurationMinutes: parseInt(e.target.value) }))}
+                          min="15"
+                          max="120"
+                          step="15"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="businessHoursStart">Business Hours Start</Label>
+                        <Input
+                          id="businessHoursStart"
+                          type="number"
+                          value={calendarConfig?.businessHoursStart || 9}
+                          onChange={(e) => setCalendarConfig(prev => ({ ...prev, businessHoursStart: parseInt(e.target.value) }))}
+                          min="0"
+                          max="23"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="businessHoursEnd">Business Hours End</Label>
+                        <Input
+                          id="businessHoursEnd"
+                          type="number"
+                          value={calendarConfig?.businessHoursEnd || 17}
+                          onChange={(e) => setCalendarConfig(prev => ({ ...prev, businessHoursEnd: parseInt(e.target.value) }))}
+                          min="0"
+                          max="23"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="autoBook"
+                          checked={calendarConfig?.autoBookInterviews || false}
+                          onCheckedChange={(checked) => setCalendarConfig(prev => ({ ...prev, autoBookInterviews: checked }))}
+                        />
+                        <Label htmlFor="autoBook">Auto-book interviews for qualified candidates</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="sendSMS"
+                          checked={calendarConfig?.sendCandidateSMS || false}
+                          onCheckedChange={(checked) => setCalendarConfig(prev => ({ ...prev, sendCandidateSMS: checked }))}
+                        />
+                        <Label htmlFor="sendSMS">Send SMS confirmation to candidates</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="sendNotification"
+                          checked={calendarConfig?.sendRecruiterNotification || false}
+                          onCheckedChange={(checked) => setCalendarConfig(prev => ({ ...prev, sendRecruiterNotification: checked }))}
+                        />
+                        <Label htmlFor="sendNotification">Send notification to recruiter</Label>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={handleCalendarConfigSave}
+                        disabled={calendarConfigMutation.isPending}
+                      >
+                        {calendarConfigMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Configuration
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleCalendarTest}
+                        disabled={calendarTestMutation.isPending}
+                      >
+                        {calendarTestMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Testing...
+                          </>
+                        ) : (
+                          <>
+                            <TestTube className="w-4 h-4 mr-2" />
+                            Test Connection
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>

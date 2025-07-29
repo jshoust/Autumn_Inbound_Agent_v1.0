@@ -1,4 +1,4 @@
-import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser, type UpdateUser, callRecords, type CallRecord, type InsertCallRecord, reportsConfig, type ReportsConfig, type InsertReportsConfig, type UpdateReportsConfig, emailLogs, type EmailLog, type InsertEmailLog } from "@shared/schema";
+import { candidates, type Candidate, type InsertCandidate, users, type User, type InsertUser, type UpdateUser, callRecords, type CallRecord, type InsertCallRecord, reportsConfig, type ReportsConfig, type InsertReportsConfig, type UpdateReportsConfig, emailLogs, type EmailLog, type InsertEmailLog, calendarConfig, type CalendarConfig, scheduledInterviews, type ScheduledInterview, type InsertScheduledInterview, type UpdateScheduledInterview } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, like, or, and, isNull, gte, lte } from "drizzle-orm";
 
@@ -56,6 +56,27 @@ export interface IStorage {
   logEmailSent(emailData: InsertEmailLog): Promise<EmailLog>;
   getEmailLogs(limit?: number): Promise<EmailLog[]>;
   getEmailLogsByReportConfig(reportConfigId: number): Promise<EmailLog[]>;
+
+  // Calendar configuration methods
+  getCalendarConfig(): Promise<CalendarConfig | null>;
+  updateCalendarConfig(data: Partial<CalendarConfig>): Promise<CalendarConfig>;
+
+  // Scheduled interviews methods
+  createScheduledInterview(data: {
+    candidateId: number;
+    candidateName: string;
+    candidatePhone: string;
+    candidateEmail?: string;
+    subject: string;
+    startTime: Date;
+    endTime: Date;
+    calendarEventId?: string;
+    recruiterEmail: string;
+  }): Promise<ScheduledInterview>;
+
+  getScheduledInterviews(): Promise<ScheduledInterview[]>;
+  getScheduledInterview(id: number): Promise<ScheduledInterview | null>;
+  updateScheduledInterview(id: number, data: Partial<ScheduledInterview>): Promise<ScheduledInterview>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -562,6 +583,69 @@ export class DatabaseStorage implements IStorage {
       .from(emailLogs)
       .orderBy(desc(emailLogs.sentAt))
       .limit(limit);
+  }
+
+  // Calendar configuration methods
+  async getCalendarConfig(): Promise<CalendarConfig | null> {
+    const results = await db.select().from(calendarConfig).limit(1);
+    return results[0] || null;
+  }
+
+  async updateCalendarConfig(data: Partial<CalendarConfig>): Promise<CalendarConfig> {
+    const existing = await this.getCalendarConfig();
+    
+    if (existing) {
+      const results = await db.update(calendarConfig)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(calendarConfig.id, existing.id))
+        .returning();
+      return results[0];
+    } else {
+      const results = await db.insert(calendarConfig).values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      return results[0];
+    }
+  }
+
+  // Scheduled interviews methods
+  async createScheduledInterview(data: {
+    candidateId: number;
+    candidateName: string;
+    candidatePhone: string;
+    candidateEmail?: string;
+    subject: string;
+    startTime: Date;
+    endTime: Date;
+    calendarEventId?: string;
+    recruiterEmail: string;
+  }): Promise<ScheduledInterview> {
+    const results = await db.insert(scheduledInterviews).values({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return results[0];
+  }
+
+  async getScheduledInterviews(): Promise<ScheduledInterview[]> {
+    const results = await db.select().from(scheduledInterviews).orderBy(desc(scheduledInterviews.startTime));
+    return results;
+  }
+
+  async getScheduledInterview(id: number): Promise<ScheduledInterview | null> {
+    const results = await db.select().from(scheduledInterviews).where(eq(scheduledInterviews.id, id));
+    return results[0] || null;
+  }
+
+  async updateScheduledInterview(id: number, data: Partial<ScheduledInterview>): Promise<ScheduledInterview> {
+    const results = await db.update(scheduledInterviews)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(scheduledInterviews.id, id))
+      .returning();
+    return results[0];
   }
 }
 

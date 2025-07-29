@@ -133,6 +133,62 @@ export const reportsConfig = pgTable("reports_config", {
   nextSendAt: timestamp("next_send_at"),
 });
 
+// Calendar configuration table for Microsoft Graph integration
+export const calendarConfig = pgTable("calendar_config", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  
+  // Microsoft Graph API credentials
+  clientId: text("client_id"),
+  clientSecret: text("client_secret"),
+  tenantId: text("tenant_id"),
+  
+  // Calendar settings
+  recruiterEmail: text("recruiter_email").default("info@neurovista.ai"),
+  defaultDurationMinutes: integer("default_duration_minutes").default(30),
+  timezone: text("timezone").default("America/Chicago"),
+  
+  // Auto-booking settings
+  autoBookInterviews: boolean("auto_book_interviews").default(true),
+  businessHoursStart: integer("business_hours_start").default(9), // 9 AM
+  businessHoursEnd: integer("business_hours_end").default(17), // 5 PM
+  
+  // Notification settings
+  sendCandidateSMS: boolean("send_candidate_sms").default(true),
+  sendRecruiterNotification: boolean("send_recruiter_notification").default(true),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Scheduled interviews table
+export const scheduledInterviews = pgTable("scheduled_interviews", {
+  id: serial("id").primaryKey(),
+  candidateId: integer("candidate_id").references(() => callRecords.id),
+  candidateName: text("candidate_name").notNull(),
+  candidatePhone: text("candidate_phone").notNull(),
+  candidateEmail: text("candidate_email"),
+  
+  // Interview details
+  subject: text("subject").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  durationMinutes: integer("duration_minutes").default(30),
+  
+  // Calendar integration
+  calendarEventId: text("calendar_event_id"),
+  recruiterEmail: text("recruiter_email").notNull(),
+  
+  // Status
+  status: text("status").default("scheduled"), // scheduled, completed, cancelled, no-show
+  confirmedByCandidate: boolean("confirmed_by_candidate").default(false),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertReportsConfigSchema = createInsertSchema(reportsConfig).omit({
   id: true,
   createdAt: true,

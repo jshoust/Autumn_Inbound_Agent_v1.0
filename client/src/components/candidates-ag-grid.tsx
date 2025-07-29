@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Calendar, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Candidate {
@@ -218,6 +218,21 @@ export default function CandidatesAgGrid({
     }
   });
 
+  // Auto-booking mutation
+  const autoBookMutation = useMutation({
+    mutationFn: async (candidate: Candidate) => {
+      const response = await fetch(`/api/candidates/${candidate.id}/auto-book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to auto-book candidate');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    }
+  });
+
   // Process candidates data
   const processedCandidates = useMemo(() => {
     return candidates.map((cand, idx) => {
@@ -312,6 +327,10 @@ export default function CandidatesAgGrid({
       qualifyMutation.mutate({ id: candidate.id, qualified });
     });
     setSelectedRows([]);
+  };
+
+  const handleAutoBook = (candidate: Candidate) => {
+    autoBookMutation.mutate(candidate);
   };
 
   if (isLoading) {
@@ -437,6 +456,9 @@ export default function CandidatesAgGrid({
                 <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">
                   Status
                 </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
@@ -508,6 +530,26 @@ export default function CandidatesAgGrid({
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-center">
                         <StatusBadgeRenderer value={candidate.qualified} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center space-x-2">
+                          {candidate.qualified === true && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAutoBook(candidate)}
+                              disabled={autoBookMutation.isPending}
+                              className="text-xs"
+                              title="Auto-book interview"
+                            >
+                              {autoBookMutation.isPending ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Calendar className="w-3 h-3" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                     {expandedRows.has(candidate.id) && (
