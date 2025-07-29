@@ -129,19 +129,33 @@ export default function Dashboard() {
         )}
 
         {/* AG Grid Table */}
-        <Card className="shadow-sm border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Candidate Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CandidatesAgGrid
+        <div className="bg-white rounded-lg shadow-sm border border-border">
+          {/* Legend */}
+          <div className="px-6 py-3 border-b border-border bg-muted/30">
+            <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+              <span className="font-medium">Symbol Legend:</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-green-600 text-lg">✅</span>
+                <span>Yes/True</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-red-600 text-lg">❌</span>
+                <span>No/False</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 text-lg">⏳</span>
+                <span>Not Asked</span>
+              </div>
+            </div>
+          </div>
+          
+          <CandidatesAgGrid
               candidates={candidates}
               isLoading={isLoading}
               onViewTranscript={handleViewTranscript}
               onRefetch={handleRefetch}
             />
-          </CardContent>
-        </Card>
+          </div>
 
         {/* Transcript Modal */}
         {selectedTranscript && (
