@@ -441,82 +441,83 @@ export default function CandidatesAgGrid({
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
               {processedCandidates.map((candidate, index) => (
-                <tr key={candidate.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-4 whitespace-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-auto hover:bg-slate-100"
-                        onClick={() => toggleRowExpansion(candidate.id)}
-                        title={expandedRows.has(candidate.id) ? 'Collapse details' : 'Expand details'}
-                      >
-                        {expandedRows.has(candidate.id) ? (
-                          <ChevronDown className="w-4 h-4" />
+                <React.Fragment key={candidate.id}>
+                  <tr className="hover:bg-slate-50">
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-1 h-auto hover:bg-slate-100"
+                          onClick={() => toggleRowExpansion(candidate.id)}
+                          title={expandedRows.has(candidate.id) ? 'Collapse details' : 'Expand details'}
+                        >
+                          {expandedRows.has(candidate.id) ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                        #{candidate.id + 1}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {candidate.name}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {candidate.phone}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                        {candidate.callTime}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        {candidate.callStatus === 'COMPLETED' ? (
+                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                            COMPLETE
+                          </div>
+                        ) : candidate.callStatus === 'INTERRUPTED' ? (
+                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                            INTERRUPTED
+                          </div>
                         ) : (
-                          <ChevronRight className="w-4 h-4" />
+                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                            INCOMPLETE
+                          </div>
                         )}
-                      </Button>
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
-                      #{candidate.id + 1}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
-                      {candidate.name}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
-                      {candidate.phone}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
-                      {candidate.callTime}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap">
-                      {candidate.callStatus === 'COMPLETED' ? (
-                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          COMPLETE
-                        </div>
-                      ) : candidate.callStatus === 'INTERRUPTED' ? (
-                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                          <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
-                          INTERRUPTED
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
-                          INCOMPLETE
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q1} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q2} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q3} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q4} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q5} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusIcon value={candidate.Q6} />
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-center">
-                      <StatusBadgeRenderer value={candidate.qualified} />
-                    </td>
-                  </tr>
-                  {expandedRows.has(candidate.id) && (
-                    <tr>
-                      <td colSpan={13} className="p-0">
-                        <ExpandedRow candidate={candidate._meta} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q1} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q2} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q3} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q4} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q5} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusIcon value={candidate.Q6} />
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <StatusBadgeRenderer value={candidate.qualified} />
                       </td>
                     </tr>
-                  )}
-                </tr>
+                    {expandedRows.has(candidate.id) && (
+                      <tr>
+                        <td colSpan={13} className="p-0">
+                          <ExpandedRow candidate={candidate._meta} />
+                        </td>
+                      </tr>
+                    )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
