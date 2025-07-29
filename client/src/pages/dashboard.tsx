@@ -149,6 +149,30 @@ export default function Dashboard() {
             </div>
           </div>
           
+          {/* Questions */}
+          <div className="px-6 py-3 border-b border-border bg-muted/10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs text-muted-foreground">
+              <div>
+                <span className="font-medium">Q1:</span> CDL License
+              </div>
+              <div>
+                <span className="font-medium">Q2:</span> 24+ Months Experience
+              </div>
+              <div>
+                <span className="font-medium">Q3:</span> Hopper Experience
+              </div>
+              <div>
+                <span className="font-medium">Q4:</span> OTR Available
+              </div>
+              <div>
+                <span className="font-medium">Q5:</span> Clean Record
+              </div>
+              <div>
+                <span className="font-medium">Q6:</span> Work Eligible
+              </div>
+            </div>
+          </div>
+
           <CandidatesAgGrid
               candidates={candidates}
               isLoading={isLoading}
