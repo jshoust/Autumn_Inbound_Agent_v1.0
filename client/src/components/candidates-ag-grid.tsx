@@ -30,80 +30,46 @@ function StatusIcon({ value }: { value: any }) {
   if (value === false || value === 'false') {
     return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
   }
-  if (value === null || value === undefined || value === '') {
-    return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
-  }
-  // For non-boolean values, show a text indicator
-  return <span style={{ color: '#666', fontSize: 12 }}>📝</span>;
+  return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
 }
 
 // Extract question order and metadata from one candidate
 function getQuestionsMeta(candidate: any) {
   const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
   
-  // Get ALL fields from data collection results, not just boolean ones
-  const allFields = Object.keys(results).filter(key => {
+  // Filter for question keys that contain boolean values or null (indicating questions not yet answered)
+  const questionKeys = Object.keys(results).filter(key => {
     const item = results[key];
-    return item && typeof item === 'object' && item.value !== null && item.value !== undefined;
+    return item?.json_schema?.type === 'boolean' && 
+           (key.startsWith('question') || key.startsWith('Question'));
   });
   
-  // Sort fields to ensure consistent order
-  const sortedKeys = allFields.sort((a, b) => {
-    // Put basic info first
-    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
-    const aBasic = basicInfo.includes(a);
-    const bBasic = basicInfo.includes(b);
-    if (aBasic && !bBasic) return -1;
-    if (!aBasic && bBasic) return 1;
-    
-    // Then sort question fields by number
+  // Sort question keys to ensure consistent order (question_one, Question_two, etc.)
+  const sortedKeys = questionKeys.sort((a, b) => {
     const aNum = a.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
     const bNum = b.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
     
-    if (aNum && bNum) {
-      // Convert word numbers to numeric for proper sorting
-      const numberMap: Record<string, number> = {
-        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
-      };
-      
-      const aOrder = numberMap[aNum] || parseInt(aNum) || 999;
-      const bOrder = numberMap[bNum] || parseInt(bNum) || 999;
-      
-      return aOrder - bOrder;
-    }
+    // Convert word numbers to numeric for proper sorting
+    const numberMap: Record<string, number> = {
+      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+    };
     
-    // Finally sort alphabetically
-    return a.localeCompare(b);
+    const aOrder = numberMap[aNum || ''] || parseInt(aNum || '0') || 999;
+    const bOrder = numberMap[bNum || ''] || parseInt(bNum || '0') || 999;
+    
+    return aOrder - bOrder;
   });
   
-  // First pass: identify questions and their numbers
-  const questionNumbers = new Map<string, number>();
-  let questionCount = 0;
-  
-  sortedKeys.forEach(key => {
-    const isQuestion = key.toLowerCase().includes('question') && !key.toLowerCase().includes('response');
-    if (isQuestion) {
-      questionCount++;
-      questionNumbers.set(key, questionCount);
-    }
-  });
-  
-  const questionMeta = sortedKeys.map((key, idx) => {
+  const boolQuestions = sortedKeys.map((key, idx) => {
     const item = results[key];
-    const isQuestion = key.toLowerCase().includes('question') && !key.toLowerCase().includes('response');
-    const isBasic = ['First_Name', 'Last_Name', 'Phone_number'].includes(key);
-    
     return {
       key: key,
-      label: isBasic ? key.replace('_', ' ') : (isQuestion ? `Q${questionNumbers.get(key)}` : key),
-      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key,
-      type: item.json_schema?.type || 'text',
-      isQuestion: isQuestion,
-      isBasic: isBasic
+      label: `Q${idx + 1}`,
+      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key
     };
   });
   
-  return questionMeta;
+  return boolQuestions;
 }
 
 // Questions Reference Card Component
@@ -230,7 +196,7 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
       return [];
     }
     
-    const responses: Array<{ question: string; answer: any; type: string; key: string }> = [];
+    const responses: Array<{ question: string; answer: any; type: string; key: string; rationale?: string }> = [];
     
     // Process all available data
     Object.entries(allData).forEach(([key, value]: [string, any]) => {
@@ -238,6 +204,7 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
         let displayValue = value.value;
         let questionText = '';
         let type = 'text';
+        let rationale = value.rationale || '';
         
         // Extract question text from json_schema.description
         if (value.json_schema?.description) {
@@ -315,7 +282,8 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
           question: questionText,
           answer: displayValue,
           type: type,
-          key: key
+          key: key,
+          rationale: rationale
         });
       }
     });
@@ -338,61 +306,87 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   const formattedResponses = getFormattedResponses();
   
   return (
-    <div className="w-full bg-white border-t border-slate-200 p-4">
+    <div className="w-full bg-white border-t border-slate-200 p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Call History Questions & Responses */}
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-2 mb-3">
-            <h4 className="font-semibold text-slate-800 text-sm">📞 Call History Details</h4>
-            <div className="text-xs text-slate-500">
+          <div className="flex items-center gap-2 mb-4">
+            <h4 className="font-semibold text-slate-800 text-lg">📞 Call Details & Responses</h4>
+            <div className="text-sm text-slate-500">
               {new Date(candidate.createdAt).toLocaleString()}
             </div>
           </div>
           
           {formattedResponses.length > 0 ? (
-            <div className="space-y-3 max-h-56 overflow-y-auto">
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               {formattedResponses.map((item, index) => (
-                <div key={item.key} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <div className="text-xs font-medium text-slate-600 mb-1">
-                    {item.key.includes('question') ? `Q${index + 1}` : item.key}: {item.question}
+                <div key={item.key} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="text-sm font-semibold text-slate-700">
+                      {item.key.includes('question') ? `Question ${index + 1}` : item.key.replace(/_/g, ' ')}:
+                    </div>
+                    <div className={`text-sm font-medium px-2 py-1 rounded ${
+                      item.type === 'boolean' 
+                        ? item.answer.includes('✅') 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {item.answer}
+                    </div>
                   </div>
-                  <div className={`text-sm font-medium ${
-                    item.type === 'boolean' 
-                      ? item.answer.includes('✅') ? 'text-green-700' : 'text-red-700'
-                      : 'text-slate-800'
-                  }`}>
-                    {item.answer}
+                  <div className="text-sm text-slate-600 mb-2">
+                    <strong>Question:</strong> {item.question}
                   </div>
+                  {item.rationale && (
+                    <div className="text-xs text-slate-500 bg-white p-2 rounded border">
+                      <strong>AI Analysis:</strong> {item.rationale}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">
-              <div className="text-sm">No detailed call responses available</div>
-              <div className="text-xs mt-1">The call data may not have been fully processed</div>
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+              <div className="text-lg mb-2">📋 No Call Data Available</div>
+              <div className="text-sm">The call data may not have been fully processed or stored</div>
+              <div className="text-xs mt-2 text-slate-400">
+                Check the raw data below for more information
+              </div>
             </div>
           )}
         </div>
         
         {/* Actions & Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-slate-50 rounded-lg p-3 space-y-3">
+          <div className="bg-slate-50 rounded-lg p-4 space-y-4">
             <div>
-              <h5 className="font-semibold text-slate-700 text-sm mb-2">📋 Summary</h5>
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
+              <h5 className="font-semibold text-slate-700 text-base mb-3">📋 Candidate Summary</h5>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Name:</span>
-                  <span className="font-medium">{candidate.firstName} {candidate.lastName}</span>
+                  <span className="font-medium text-slate-800">
+                    {candidate.firstName} {candidate.lastName}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Phone:</span>
-                  <span className="font-medium">{candidate.phone}</span>
+                  <span className="font-medium text-slate-800">{candidate.phone}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Call ID:</span>
+                  <span className="font-mono text-xs text-slate-600">
+                    {candidate.conversationId}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Status:</span>
-                  <span className={`font-medium ${
-                    candidate.qualified === true ? 'text-green-600' : 
-                    candidate.qualified === false ? 'text-red-600' : 'text-yellow-600'
+                  <span className={`font-medium px-2 py-1 rounded text-xs ${
+                    candidate.qualified === true 
+                      ? 'bg-green-100 text-green-800' 
+                      : candidate.qualified === false 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-yellow-100 text-yellow-800'
                   }`}>
                     {candidate.qualified === true ? '✅ Qualified' : 
                      candidate.qualified === false ? '❌ Not Qualified' : '⏳ Pending'}
@@ -401,58 +395,54 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
               </div>
             </div>
             
-            <div className="border-t border-slate-200 pt-3">
-              <h5 className="font-semibold text-slate-700 text-sm mb-2">🔧 Actions</h5>
+            <div className="border-t border-slate-200 pt-4">
+              <h5 className="font-semibold text-slate-700 text-base mb-3">🔧 Actions</h5>
               <div className="space-y-2">
-                {candidate.transcript && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs"
-                    onClick={() => onViewTranscript(candidate)}
-                  >
-                    <FileText className="w-3 h-3 mr-1" />
-                    View Full Transcript
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => onViewTranscript(candidate)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Full Transcript
+                </Button>
                 
-                {candidate.qualified === null ? (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
-                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                      disabled={qualifyMutation.isPending}
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      Qualify
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="flex-1 text-xs"
-                      onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                      disabled={qualifyMutation.isPending}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                ) : (
+                <div className="flex gap-2">
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => qualifyMutation.mutate({ 
-                      id: candidate.id, 
-                      qualified: !candidate.qualified 
-                    })}
-                    disabled={qualifyMutation.isPending}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
+                    disabled={candidate.qualified === true}
                   >
-                    {candidate.qualified ? 'Mark as Unqualified' : 'Mark as Qualified'}
+                    ✅ Qualify
                   </Button>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
+                    disabled={candidate.qualified === false}
+                  >
+                    ❌ Reject
+                  </Button>
+                </div>
               </div>
+            </div>
+            
+            {/* Raw Data Toggle */}
+            <div className="border-t border-slate-200 pt-4">
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
+                  🔍 Raw Data
+                </summary>
+                <div className="mt-2 p-2 bg-white rounded border text-xs font-mono overflow-auto max-h-32">
+                  <pre className="whitespace-pre-wrap">
+                    {JSON.stringify(allData, null, 2)}
+                  </pre>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -463,27 +453,26 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
 
 // Status Badge Cell Renderer
 function StatusBadgeRenderer({ value }: any) {
-  const qualified = value;
-  if (qualified === true) {
+  if (value === true) {
     return (
-      <Badge className="bg-green-100 text-green-800 border-green-200">
-        <Check className="w-3 h-3 mr-1" />
-        Qualified
-      </Badge>
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+        PASS
+      </div>
     );
-  } else if (qualified === false) {
+  } else if (value === false) {
     return (
-      <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
-        <X className="w-3 h-3 mr-1" />
-        Not Qualified
-      </Badge>
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+        <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+        FAIL
+      </div>
     );
   } else {
     return (
-      <Badge variant="secondary" className="bg-slate-100 text-slate-800">
-        <Clock className="w-3 h-3 mr-1" />
-        Pending Review
-      </Badge>
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+        PENDING
+      </div>
     );
   }
 }
@@ -546,11 +535,9 @@ export default function CandidatesAgGrid({
         return entry ? entry.value : null;
       };
       
-      // Create question columns dynamically (only for questions, not basic info)
+      // Create question columns dynamically
       const questionColumns = Object.fromEntries(
-        questionMeta
-          .filter(q => q.isQuestion)
-          .map(q => [q.label, getField(q.key)])
+        questionMeta.map(q => [q.label, getField(q.key)])
       );
       
       // Main row
@@ -577,7 +564,7 @@ export default function CandidatesAgGrid({
           phone: '',
           callTime: '',
           qualified: null,
-          ...Object.fromEntries(questionMeta.filter(q => q.isQuestion).map(q => [q.label, ''])),
+          ...Object.fromEntries(questionMeta.map(q => [q.label, ''])),
           _all: results,
           _meta: cand,
           _isExpanded: true,
@@ -629,17 +616,23 @@ export default function CandidatesAgGrid({
         <Button
           variant="ghost"
           size="sm"
-          className="p-1 h-auto"
+          className="p-1 h-auto hover:bg-slate-100"
           onClick={() => toggleRowExpansion(data.id)}
+          title={expandedRows.has(data.id) ? 'Collapse details' : 'Expand details'}
         >
-          <ChevronDown className={`w-3 h-3 transition-transform ${expandedRows.has(data.id) ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(data.id) ? 'rotate-180' : ''}`} />
         </Button>
       );
     }
     
     if (colDef.field === 'callTime' && data._meta) {
       const date = new Date(data._meta.createdAt);
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return (
+        <div className="text-sm">
+          <div>{date.toLocaleDateString()}</div>
+          <div className="text-xs text-slate-500">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      );
     }
     
     // Handle question columns
@@ -649,7 +642,19 @@ export default function CandidatesAgGrid({
         return <StatusIcon value={params.value} />;
       } else {
         // For non-boolean questions, show a text indicator
-        return <StatusIcon value={params.value} />;
+        return (
+          <div className="text-center">
+            {params.value ? (
+              <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                {typeof params.value === 'string' && params.value.length > 10 
+                  ? params.value.substring(0, 10) + '...' 
+                  : params.value}
+              </span>
+            ) : (
+              <span className="text-xs text-slate-400">—</span>
+            )}
+          </div>
+        );
       }
     }
     
@@ -663,34 +668,46 @@ export default function CandidatesAgGrid({
   // Build AG Grid columns
   const columnDefs = useMemo(() => [
     { 
-      headerName: '', 
+      headerName: '🔽', 
       field: 'expand',
-      width: 40,
+      width: 50,
       cellRenderer: CellRenderer,
       sortable: false,
       filter: false,
-      resizable: false
+      resizable: false,
+      headerTooltip: 'Click to expand for detailed view'
+    },
+    { 
+      headerName: 'ID', 
+      field: 'id', 
+      width: 60,
+      minWidth: 50,
+      cellRenderer: (params: any) => `#${params.value + 1}`,
+      headerTooltip: 'Caller ID (sequential)'
     },
     { 
       headerName: 'Name', 
       field: 'name', 
-      width: 120,
-      minWidth: 100,
-      cellRenderer: CellRenderer
+      width: 150,
+      minWidth: 120,
+      cellRenderer: CellRenderer,
+      headerTooltip: 'Candidate full name'
     },
     { 
       headerName: 'Phone', 
       field: 'phone', 
-      width: 120,
+      width: 130,
       minWidth: 110,
-      cellRenderer: CellRenderer
+      cellRenderer: CellRenderer,
+      headerTooltip: 'Contact phone number'
     },
     { 
       headerName: 'Call Time', 
       field: 'callTime', 
-      width: 130,
+      width: 140,
       minWidth: 120,
-      cellRenderer: CellRenderer
+      cellRenderer: CellRenderer,
+      headerTooltip: 'Call completion timestamp'
     },
     // Only show question columns (not basic info)
     ...questionMeta
@@ -698,18 +715,20 @@ export default function CandidatesAgGrid({
       .map(q => ({
         headerName: q.label,
         field: q.label,
-        width: 70,
-        minWidth: 60,
-        maxWidth: 80,
+        width: 80,
+        minWidth: 70,
+        maxWidth: 90,
         cellRenderer: CellRenderer,
-        cellStyle: { textAlign: 'center' }
+        cellStyle: { textAlign: 'center' },
+        headerTooltip: q.questionText || `Question ${q.label}`
       })),
     {
       headerName: 'Status',
       field: 'qualified',
       width: 100,
       minWidth: 90,
-      cellRenderer: CellRenderer
+      cellRenderer: CellRenderer,
+      headerTooltip: 'Qualification status (PASS/FAIL)'
     }
   ], [questionMeta, expandedRows]);
 
@@ -744,42 +763,85 @@ export default function CandidatesAgGrid({
 
   return (
     <div className="space-y-4">
-      {/* Questions Reference Card */}
-      <QuestionsReferenceCard questionMeta={questionMeta} candidateList={candidateList} />
-      
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={exportCSV}>
-            Export CSV
-          </Button>
+      {/* Table Header with Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-lg">
+        <div className="flex items-center gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Call Records</h2>
+            <p className="text-sm text-slate-600">
+              {candidateList.length} total records • Auto-refresh every 5 seconds
+            </p>
+          </div>
+          
+          {/* Questions Reference */}
+          <QuestionsReferenceCard questionMeta={questionMeta} candidateList={candidateList} />
         </div>
         
-        {selectedRows.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">
-              {selectedRows.length} selected
-            </span>
+        <div className="flex items-center gap-2">
+          {/* Expand/Collapse Controls */}
+          <div className="flex items-center gap-1">
             <Button
+              variant="outline"
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleBulkQualify(true)}
+              onClick={() => {
+                if (expandedRows.size === candidateList.length) {
+                  setExpandedRows(new Set());
+                } else {
+                  setExpandedRows(new Set(candidateList.map((_, idx) => idx)));
+                }
+              }}
+              className="text-xs"
             >
-              Qualify Selected
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleBulkQualify(false)}
-            >
-              Reject Selected
+              {expandedRows.size === candidateList.length ? 'Collapse All' : 'Expand All'}
             </Button>
           </div>
-        )}
+          
+          {/* Export */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCSV}
+            className="text-xs"
+          >
+            📊 Export CSV
+          </Button>
+          
+          {/* Bulk Actions */}
+          {selectedRows.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkQualify(true)}
+                className="text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+              >
+                ✅ Qualify All ({selectedRows.length})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkQualify(false)}
+                className="text-xs bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+              >
+                ❌ Reject All ({selectedRows.length})
+              </Button>
+            </div>
+          )}
+          
+          {/* Refresh */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefetch}
+            className="text-xs"
+          >
+            🔄 Refresh
+          </Button>
+        </div>
       </div>
 
       {/* AG Grid */}
-      <div className="ag-theme-alpine" style={{ height: '500px', width: '100%' }}>
+      <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
         <AgGridReact
           ref={gridRef}
           rowData={rowData}
@@ -806,9 +868,9 @@ export default function CandidatesAgGrid({
           isFullWidthRow={isFullWidthRow}
           fullWidthCellRenderer={FullWidthCellRenderer}
           getRowHeight={(params) => {
-            return params.data._rowType === 'expanded' ? 300 : 45;
+            return params.data._rowType === 'expanded' ? 400 : 50;
           }}
-          headerHeight={40}
+          headerHeight={45}
           suppressHorizontalScroll={false}
           getRowStyle={(params) => {
             if (params.data._rowType === 'expanded') {
