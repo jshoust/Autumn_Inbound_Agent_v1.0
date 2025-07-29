@@ -305,10 +305,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: record.createdAt,
         // Map the extracted data properly for frontend consumption
         transcript: record.rawData?.transcript || [],
-        dataCollection: record.extractedData?.dataCollectionResults || {},
+        dataCollection: record.rawData?.analysis?.data_collection_results || {},
         rawConversationData: {
           analysis: {
-            data_collection_results: record.extractedData?.dataCollectionResults || {}
+            data_collection_results: record.rawData?.analysis?.data_collection_results || {}
           },
           transcript: record.rawData?.transcript || []
         }

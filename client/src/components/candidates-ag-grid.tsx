@@ -30,6 +30,9 @@ function StatusIcon({ value }: { value: any }) {
   if (value === false || value === 'false') {
     return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
   }
+  if (value === 'Not Asked' || value === null || value === undefined) {
+    return <span style={{ color: '#aaa', fontSize: 18 }}>⏳</span>;
+  }
   return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
 }
 
@@ -377,9 +380,18 @@ export default function CandidatesAgGrid({
       // Get data from the correct location in the API response
       const results = cand?.rawConversationData?.analysis?.data_collection_results || {};
       
+      // Debug: Log the data for each candidate
+      console.log(`=== CANDIDATE ${idx} DATA ===`);
+      console.log('Candidate:', cand.id);
+      console.log('Raw conversation data:', cand?.rawConversationData);
+      console.log('Analysis results:', results);
+      console.log('Available keys:', Object.keys(results));
+      
       const getField = (field: string) => {
         const entry = results[field];
-        return entry ? entry.value : null;
+        const value = entry ? entry.value : null;
+        console.log(`Field ${field}:`, value);
+        return value;
       };
       
       // Check if call was completed or interrupted
@@ -388,15 +400,17 @@ export default function CandidatesAgGrid({
       const hasData = Object.keys(results).length > 0;
       const callStatus = isInterrupted ? 'INTERRUPTED' : hasData ? 'COMPLETED' : 'INCOMPLETE';
       
-      // Create question columns for all 6 questions
+      // Create question columns for all 6 questions - show "Not Asked" for null values
       const questionColumns = {
-        Q1: getField('question_one'),
-        Q2: getField('Question_two'),
-        Q3: getField('Question_three'),
-        Q4: getField('question_four'),
-        Q5: getField('question_five'),
-        Q6: getField('question_six')
+        Q1: getField('question_one') ?? 'Not Asked',
+        Q2: getField('Question_two') ?? 'Not Asked',
+        Q3: getField('Question_three') ?? 'Not Asked',
+        Q4: getField('question_four') ?? 'Not Asked',
+        Q5: getField('question_five') ?? 'Not Asked',
+        Q6: getField('question_six') ?? 'Not Asked'
       };
+      
+      console.log('Question columns:', questionColumns);
       
       // Main row
       const mainRow = {
@@ -690,6 +704,26 @@ export default function CandidatesAgGrid({
 
   return (
     <div className="space-y-4">
+      {/* Debug Info - Show raw data structure */}
+      {candidateList.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">🔍 Debug: Data Structure</h3>
+          <p className="text-sm text-blue-700 mb-3">
+            Raw data structure for first candidate:
+          </p>
+          <div className="bg-white p-3 rounded border text-xs font-mono overflow-auto max-h-32">
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify({
+                id: candidateList[0].id,
+                rawConversationData: candidateList[0].rawConversationData,
+                dataCollection: candidateList[0].dataCollection,
+                extractedData: candidateList[0].extractedData
+              }, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+      
       {/* Table Header with Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-lg">
         <div className="flex items-center gap-4">
