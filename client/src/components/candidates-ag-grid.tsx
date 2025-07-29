@@ -53,18 +53,18 @@ function StatusBadgeRenderer({ value }: { value: any }) {
       </div>
     );
   } else if (value === false) {
-    return (
+  return (
       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
         <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
         FAIL
-      </div>
+              </div>
     );
   } else {
     return (
       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
         <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
         PENDING
-      </div>
+        </div>
     );
   }
 }
@@ -120,15 +120,15 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
     if (questionData) {
       let displayValue = questionData.value;
       let response = responseData?.value || '';
-      
-      // Format boolean responses
+        
+        // Format boolean responses
       if (questionData.json_schema?.type === 'boolean') {
         displayValue = questionData.value === true ? '✅ Yes' : questionData.value === false ? '❌ No' : '⏳ Not Asked';
       }
       
       return {
         question: q.questionText,
-        answer: displayValue,
+          answer: displayValue,
         response: response,
         key: q.key
       };
@@ -141,20 +141,20 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
       };
     }
   });
-
+  
   return (
     <div className="w-full bg-white border-t border-slate-200 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <h4 className="font-semibold text-slate-800 text-xl">📞 Call Questions & Responses</h4>
           <div className="text-sm text-slate-500">
-            {new Date(candidate.createdAt).toLocaleString()}
+              {new Date(candidate.createdAt).toLocaleString()}
+            </div>
           </div>
-        </div>
-        
-        {formattedResponses.length > 0 ? (
+          
+                     {formattedResponses.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {formattedResponses.map((item, index) => (
+              {formattedResponses.map((item, index) => (
               <div key={item.key} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                 <div className="flex items-start justify-between mb-3">
                   <div className="text-lg font-semibold text-slate-700">
@@ -180,7 +180,7 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
                 )}
               </div>
             ))}
-          </div>
+            </div>
         ) : (
           <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
             <div className="text-lg mb-2">📋 No Call Data Available</div>
@@ -368,17 +368,17 @@ export default function CandidatesAgGrid({
                 className="text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
               >
                 ✅ Qualify All ({selectedRows.length})
-              </Button>
-              <Button
+            </Button>
+            <Button
                 variant="outline"
-                size="sm"
-                onClick={() => handleBulkQualify(false)}
+              size="sm"
+              onClick={() => handleBulkQualify(false)}
                 className="text-xs bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-              >
+            >
                 ❌ Reject All ({selectedRows.length})
-              </Button>
-            </div>
-          )}
+            </Button>
+          </div>
+        )}
           
           {/* Refresh */}
           <Button
@@ -441,8 +441,7 @@ export default function CandidatesAgGrid({
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
               {processedCandidates.map((candidate, index) => (
-                <React.Fragment key={candidate.id}>
-                  <tr className="hover:bg-slate-50">
+                <tr key={candidate.id} className="hover:bg-slate-50">
                     <td className="px-3 py-4 whitespace-nowrap">
                       <Button
                         variant="ghost"
@@ -517,7 +516,7 @@ export default function CandidatesAgGrid({
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                </tr>
               ))}
             </tbody>
           </table>
