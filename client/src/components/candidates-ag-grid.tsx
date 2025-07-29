@@ -24,10 +24,10 @@ interface CandidatesAgGridProps {
 
 // Helper: render check, x, or dash for Q columns
 function StatusIcon({ value }: { value: any }) {
-  if (value === true || value === 'true') {
+  if (value === true || value === 'true' || value === 'TRUE') {
     return <span style={{ color: '#168821', fontSize: 22 }}>✅</span>;
   }
-  if (value === false || value === 'false') {
+  if (value === false || value === 'false' || value === 'FALSE') {
     return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
   }
   if (value === 'Not Asked' || value === null || value === undefined) {
