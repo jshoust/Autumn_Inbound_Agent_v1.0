@@ -25,164 +25,12 @@ interface CandidatesAgGridProps {
 // Helper: render check, x, or dash for Q columns
 function StatusIcon({ value }: { value: any }) {
   if (value === true || value === 'true') {
-    return <span style={{ color: '#168821', fontSize: 22 }}>✔️</span>;
+    return <span style={{ color: '#168821', fontSize: 22 }}>✅</span>;
   }
   if (value === false || value === 'false') {
     return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
   }
   return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
-}
-
-// Extract question order and metadata from one candidate
-function getQuestionsMeta(candidate: any) {
-  const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
-  
-  // Filter for question keys that contain boolean values or null (indicating questions not yet answered)
-  const questionKeys = Object.keys(results).filter(key => {
-    const item = results[key];
-    return item?.json_schema?.type === 'boolean' && 
-           (key.startsWith('question') || key.startsWith('Question'));
-  });
-  
-  // Sort question keys to ensure consistent order (question_one, Question_two, etc.)
-  const sortedKeys = questionKeys.sort((a, b) => {
-    const aNum = a.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
-    const bNum = b.toLowerCase().match(/question[_\s]*(\w+)/)?.[1];
-    
-    // Convert word numbers to numeric for proper sorting
-    const numberMap: Record<string, number> = {
-      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
-    };
-    
-    const aOrder = numberMap[aNum || ''] || parseInt(aNum || '0') || 999;
-    const bOrder = numberMap[bNum || ''] || parseInt(bNum || '0') || 999;
-    
-    return aOrder - bOrder;
-  });
-  
-  const boolQuestions = sortedKeys.map((key, idx) => {
-    const item = results[key];
-    return {
-      key: key,
-      label: `Q${idx + 1}`,
-      questionText: item.json_schema?.description?.split('\n').pop()?.trim() || key
-    };
-  });
-  
-  return boolQuestions;
-}
-
-// Questions Reference Card Component
-function QuestionsReferenceCard({ questionMeta, candidateList }: { questionMeta: any[], candidateList: any[] }) {
-  if (questionMeta.length === 0) return null;
-
-  // Get questions with descriptions from the first candidate with data
-  const questionsWithDescriptions = useMemo(() => {
-    for (const candidate of candidateList) {
-      const results = candidate?.rawConversationData?.analysis?.data_collection_results || {};
-      
-      const questionsData = questionMeta.map(q => {
-        const item = results[q.key];
-        if (item?.json_schema?.description) {
-          // Extract the actual question from the description (usually in quotes)
-          const description = item.json_schema.description;
-          
-          // Extract question text and remove quotes for consistency
-          let question = '';
-          
-          // Pattern 1: Text in double quotes (remove the quotes)
-          const doubleQuoteMatch = description.match(/"([^"]+)"/);
-          if (doubleQuoteMatch) {
-            question = doubleQuoteMatch[1];
-          }
-          // Pattern 2: Text after "question:" or similar
-          else if (description.includes('question')) {
-            const lines = description.split('\n');
-            const questionLine = lines.find(line => 
-              line.toLowerCase().includes('question') && line.includes('?')
-            );
-            if (questionLine) {
-              question = questionLine.replace(/.*question[:\s]*/i, '').trim();
-            }
-          }
-          // Pattern 3: Any line ending with question mark
-          else {
-            const lines = description.split('\n');
-            const questionLine = lines.find(line => line.trim().endsWith('?'));
-            if (questionLine) {
-              question = questionLine.trim();
-            }
-          }
-          
-          // Fallback to last non-empty line
-          if (!question) {
-            const lines = description.split('\n').filter(line => line.trim());
-            question = lines[lines.length - 1]?.trim() || q.key;
-          }
-          
-          // Comprehensive quote stripping function
-          function stripOuterQuotes(str: string) {
-            let cleaned = str.trim();
-            while (
-              (
-                (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
-                (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
-                (cleaned.startsWith('\u201C') && cleaned.endsWith('\u201D')) ||
-                (cleaned.startsWith('\u2018') && cleaned.endsWith('\u2019')) ||
-                (cleaned.startsWith('`') && cleaned.endsWith('`'))
-              ) && cleaned.length > 1
-            ) {
-              cleaned = cleaned.substring(1, cleaned.length - 1).trim();
-            }
-            return cleaned;
-          }
-          
-          question = stripOuterQuotes(question);
-          
-          return {
-            label: q.label,
-            question: question,
-            key: q.key
-          };
-        }
-        return {
-          label: q.label,
-          question: `Question data not available for ${q.key}`,
-          key: q.key
-        };
-      });
-      
-      if (questionsData.some(q => q.question)) {
-        return questionsData;
-      }
-    }
-    return [];
-  }, [questionMeta, candidateList]);
-
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <HelpCircle className="w-5 h-5" />
-          Screening Questions Reference
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {questionsWithDescriptions.map((q, idx) => (
-            <div key={q.key} className="p-3 border rounded-lg bg-slate-50">
-              <div className="font-semibold text-sm text-blue-600 mb-1">
-                {q.label}
-              </div>
-              <div className="text-sm text-gray-700">
-                {q.question}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 // Detail Cell Renderer for expanded rows
@@ -196,111 +44,101 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
       return [];
     }
     
-    const responses: Array<{ question: string; answer: any; type: string; key: string; rationale?: string }> = [];
+    // Define the 6 questions with their keys and descriptions
+    const questions = [
+      {
+        key: 'question_one',
+        label: 'Q1: CDL License',
+        questionText: 'Do you currently have a valid Class A commercial driver\'s license?',
+        responseKey: 'question_one_response'
+      },
+      {
+        key: 'Question_two',
+        label: 'Q2: Experience',
+        questionText: 'Do you have at least 24 months of experience driving a tractor-trailer?',
+        responseKey: 'question_two_response'
+      },
+      {
+        key: 'Question_three',
+        label: 'Q3: Hopper Experience',
+        questionText: 'Do you have verifiable experience with hoppers?',
+        responseKey: 'question_three_response'
+      },
+      {
+        key: 'question_four',
+        label: 'Q4: OTR Available',
+        questionText: 'Are you able to be over the road for 3 weeks at a time?',
+        responseKey: 'Question_four_response'
+      },
+      {
+        key: 'question_five',
+        label: 'Q5: Clean Record',
+        questionText: 'Have you had any serious traffic violations in the last 3 years?',
+        responseKey: 'question_five_reponse'
+      },
+      {
+        key: 'question_six',
+        label: 'Q6: Work Eligible',
+        questionText: 'Are you legally eligible to work in the United States?',
+        responseKey: null
+      }
+    ];
     
-    // Process all available data
-    Object.entries(allData).forEach(([key, value]: [string, any]) => {
-      if (value && typeof value === 'object' && value.value !== null && value.value !== undefined && value.value !== '') {
-        let displayValue = value.value;
-        let questionText = '';
-        let type = 'text';
-        let rationale = value.rationale || '';
-        
-        // Extract question text from json_schema.description
-        if (value.json_schema?.description) {
-          const description = value.json_schema.description;
-          
-          // Extract the actual question from the description
-          let question = '';
-          
-          // Pattern 1: Text in double quotes (remove the quotes)
-          const doubleQuoteMatch = description.match(/"([^"]+)"/);
-          if (doubleQuoteMatch) {
-            question = doubleQuoteMatch[1];
-          }
-          // Pattern 2: Text after "question:" or similar
-          else if (description.includes('question')) {
-            const lines = description.split('\n');
-            const questionLine = lines.find(line => 
-              line.toLowerCase().includes('question') && line.includes('?')
-            );
-            if (questionLine) {
-              question = questionLine.replace(/.*question[:\s]*/i, '').trim();
-            }
-          }
-          // Pattern 3: Any line ending with question mark
-          else {
-            const lines = description.split('\n');
-            const questionLine = lines.find(line => line.trim().endsWith('?'));
-            if (questionLine) {
-              question = questionLine.trim();
-            }
-          }
-          
-          // Fallback to last non-empty line
-          if (!question) {
-            const lines = description.split('\n').filter(line => line.trim());
-            question = lines[lines.length - 1]?.trim() || key;
-          }
-          
-          // Strip outer quotes
-          function stripOuterQuotes(str: string) {
-            let cleaned = str.trim();
-            while (
-              (
-                (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
-                (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
-                (cleaned.startsWith('\u201C') && cleaned.endsWith('\u201D')) ||
-                (cleaned.startsWith('\u2018') && cleaned.endsWith('\u2019')) ||
-                (cleaned.startsWith('`') && cleaned.endsWith('`'))
-              ) && cleaned.length > 1
-            ) {
-              cleaned = cleaned.substring(1, cleaned.length - 1).trim();
-            }
-            return cleaned;
-          }
-          
-          questionText = stripOuterQuotes(question);
-        } else {
-          questionText = key.replace(/_/g, ' ');
-        }
-        
-        // Determine type from json_schema
-        type = value.json_schema?.type || 'text';
+    const responses: Array<{ question: string; answer: any; type: string; key: string; rationale?: string; response?: string }> = [];
+    
+    // Process each question
+    questions.forEach(q => {
+      const questionData = allData[q.key];
+      const responseData = q.responseKey ? allData[q.responseKey] : null;
+      
+      if (questionData) {
+        let displayValue = questionData.value;
+        let rationale = questionData.rationale || '';
+        let response = responseData?.value || '';
         
         // Format boolean responses
-        if (type === 'boolean') {
-          displayValue = value.value === true ? '✅ Yes' : value.value === false ? '❌ No' : displayValue;
-        }
-        
-        // Truncate long text responses
-        if (typeof displayValue === 'string' && displayValue.length > 100) {
-          displayValue = displayValue.substring(0, 100) + '...';
+        if (questionData.json_schema?.type === 'boolean') {
+          displayValue = questionData.value === true ? '✅ Yes' : questionData.value === false ? '❌ No' : '⏳ Not Asked';
         }
         
         responses.push({
-          question: questionText,
+          question: q.questionText,
           answer: displayValue,
-          type: type,
-          key: key,
-          rationale: rationale
+          type: questionData.json_schema?.type || 'text',
+          key: q.key,
+          rationale: rationale,
+          response: response
+        });
+      } else {
+        // Question wasn't asked/answered
+        responses.push({
+          question: q.questionText,
+          answer: '⏳ Not Asked',
+          type: 'boolean',
+          key: q.key,
+          rationale: 'This question was not asked during the call.',
+          response: ''
         });
       }
     });
-
-    // Sort responses to put basic info first, then questions
-    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
-    const questionKeys = Object.keys(allData).filter(key => 
-      key.toLowerCase().includes('question') || key.toLowerCase().includes('schedule')
-    );
     
-    return responses.sort((a, b) => {
-      const aBasic = basicInfo.includes(a.key);
-      const bBasic = basicInfo.includes(b.key);
-      if (aBasic && !bBasic) return -1;
-      if (!aBasic && bBasic) return 1;
-      return a.key.localeCompare(b.key);
+    // Add basic info if available
+    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
+    basicInfo.forEach(key => {
+      const item = allData[key];
+      if (item) {
+        responses.unshift({
+          question: key.replace('_', ' '),
+          answer: item.value,
+          type: item.json_schema?.type || 'text',
+          key: key,
+          rationale: item.rationale || '',
+          response: ''
+        });
+      }
     });
+    
+    return responses;
   };
 
   const formattedResponses = getFormattedResponses();
@@ -323,13 +161,15 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
                 <div key={item.key} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                   <div className="flex items-start justify-between mb-2">
                     <div className="text-sm font-semibold text-slate-700">
-                      {item.key.includes('question') ? `Question ${index + 1}` : item.key.replace(/_/g, ' ')}:
+                      {item.key.includes('question') ? item.key.replace('_', ' ').replace(/([A-Z])/g, ' $1').trim() : item.key.replace('_', ' ')}:
                     </div>
                     <div className={`text-sm font-medium px-2 py-1 rounded ${
                       item.type === 'boolean' 
                         ? item.answer.includes('✅') 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          : item.answer.includes('❌')
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}>
                       {item.answer}
@@ -338,6 +178,11 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
                   <div className="text-sm text-slate-600 mb-2">
                     <strong>Question:</strong> {item.question}
                   </div>
+                  {item.response && (
+                    <div className="text-sm text-slate-700 mb-2 bg-white p-2 rounded border">
+                      <strong>Response:</strong> "{item.response}"
+                    </div>
+                  )}
                   {item.rationale && (
                     <div className="text-xs text-slate-500 bg-white p-2 rounded border">
                       <strong>AI Analysis:</strong> {item.rationale}
@@ -515,37 +360,51 @@ export default function CandidatesAgGrid({
   // Defensive: if a single object passed, wrap as array
   const candidateList = Array.isArray(candidates) ? candidates : [candidates];
 
-  // Figure out all unique question fields & order (from first candidate with any)
-  const questionMeta = useMemo(() => {
-    for (const cand of candidateList) {
-      const meta = getQuestionsMeta(cand);
-      if (meta.length > 0) return meta;
-    }
-    return [];
-  }, [candidateList]);
+  // Debug: Log the incoming data
+  console.log('=== CANDIDATES DATA ===');
+  console.log('Candidates count:', candidateList.length);
+  if (candidateList.length > 0) {
+    console.log('First candidate:', candidateList[0]);
+    console.log('First candidate rawConversationData:', candidateList[0]?.rawConversationData);
+    console.log('First candidate data_collection_results:', candidateList[0]?.rawConversationData?.analysis?.data_collection_results);
+  }
 
   // Build rows: one per candidate with expansion rows
   const rowData = useMemo(() => {
     const rows: any[] = [];
     
     candidateList.forEach((cand, idx) => {
+      // Get data from the correct location in the API response
       const results = cand?.rawConversationData?.analysis?.data_collection_results || {};
+      
       const getField = (field: string) => {
         const entry = results[field];
         return entry ? entry.value : null;
       };
       
-      // Create question columns dynamically
-      const questionColumns = Object.fromEntries(
-        questionMeta.map(q => [q.label, getField(q.key)])
-      );
+      // Check if call was completed or interrupted
+      const transcript = cand?.transcript || cand?.rawConversationData?.transcript || [];
+      const isInterrupted = transcript.some((msg: any) => msg.interrupted === true);
+      const hasData = Object.keys(results).length > 0;
+      const callStatus = isInterrupted ? 'INTERRUPTED' : hasData ? 'COMPLETED' : 'INCOMPLETE';
+      
+      // Create question columns for all 6 questions
+      const questionColumns = {
+        Q1: getField('question_one'),
+        Q2: getField('Question_two'),
+        Q3: getField('Question_three'),
+        Q4: getField('question_four'),
+        Q5: getField('question_five'),
+        Q6: getField('question_six')
+      };
       
       // Main row
       const mainRow = {
         id: idx,
-        name: `${cand.firstName || ''} ${cand.lastName || ''}`.trim() || 'Unknown',
-        phone: cand.phone || getField('Phone_number'),
+        name: `${cand.firstName || getField('First_Name') || ''} ${cand.lastName || getField('Last_Name') || ''}`.trim() || 'Unknown',
+        phone: cand.phone || getField('Phone_number') || 'No phone',
         callTime: new Date(cand.createdAt).toLocaleString(),
+        callStatus: callStatus,
         qualified: cand.qualified,
         ...questionColumns,
         _all: results,
@@ -563,8 +422,14 @@ export default function CandidatesAgGrid({
           name: '',
           phone: '',
           callTime: '',
+          callStatus: '',
           qualified: null,
-          ...Object.fromEntries(questionMeta.map(q => [q.label, ''])),
+          Q1: '',
+          Q2: '',
+          Q3: '',
+          Q4: '',
+          Q5: '',
+          Q6: '',
           _all: results,
           _meta: cand,
           _isExpanded: true,
@@ -576,7 +441,7 @@ export default function CandidatesAgGrid({
     });
     
     return rows;
-  }, [candidateList, questionMeta, expandedRows]);
+  }, [candidateList, expandedRows]);
 
   const toggleRowExpansion = (rowId: number) => {
     setExpandedRows(prev => {
@@ -635,27 +500,9 @@ export default function CandidatesAgGrid({
       );
     }
     
-    // Handle question columns
-    if (questionMeta.some(q => q.label === colDef.field)) {
-      const questionInfo = questionMeta.find(q => q.label === colDef.field);
-      if (questionInfo?.type === 'boolean') {
-        return <StatusIcon value={params.value} />;
-      } else {
-        // For non-boolean questions, show a text indicator
-        return (
-          <div className="text-center">
-            {params.value ? (
-              <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
-                {typeof params.value === 'string' && params.value.length > 10 
-                  ? params.value.substring(0, 10) + '...' 
-                  : params.value}
-              </span>
-            ) : (
-              <span className="text-xs text-slate-400">—</span>
-            )}
-          </div>
-        );
-      }
+    // Handle question columns (Q1-Q6)
+    if (['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'].includes(colDef.field)) {
+      return <StatusIcon value={params.value} />;
     }
     
     if (colDef.field === 'qualified') {
@@ -709,19 +556,99 @@ export default function CandidatesAgGrid({
       cellRenderer: CellRenderer,
       headerTooltip: 'Call completion timestamp'
     },
-    // Only show question columns (not basic info)
-    ...questionMeta
-      .filter(q => q.isQuestion)
-      .map(q => ({
-        headerName: q.label,
-        field: q.label,
-        width: 80,
-        minWidth: 70,
-        maxWidth: 90,
-        cellRenderer: CellRenderer,
-        cellStyle: { textAlign: 'center' },
-        headerTooltip: q.questionText || `Question ${q.label}`
-      })),
+    {
+      headerName: 'Call Status',
+      field: 'callStatus',
+      width: 100,
+      minWidth: 90,
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        if (status === 'COMPLETED') {
+          return (
+            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+              COMPLETE
+            </div>
+          );
+        } else if (status === 'INTERRUPTED') {
+          return (
+            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+              INTERRUPTED
+            </div>
+          );
+        } else {
+          return (
+            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+              INCOMPLETE
+            </div>
+          );
+        }
+      },
+      headerTooltip: 'Call completion status'
+    },
+    // Fixed question columns
+    {
+      headerName: 'Q1',
+      field: 'Q1',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Do you currently have a valid Class A commercial driver\'s license?'
+    },
+    {
+      headerName: 'Q2',
+      field: 'Q2',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Do you have at least 24 months of experience driving a tractor-trailer?'
+    },
+    {
+      headerName: 'Q3',
+      field: 'Q3',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Do you have verifiable experience with hoppers?'
+    },
+    {
+      headerName: 'Q4',
+      field: 'Q4',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Are you able to be over the road for 3 weeks at a time?'
+    },
+    {
+      headerName: 'Q5',
+      field: 'Q5',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Have you had any serious traffic violations in the last 3 years?'
+    },
+    {
+      headerName: 'Q6',
+      field: 'Q6',
+      width: 80,
+      minWidth: 70,
+      maxWidth: 90,
+      cellRenderer: CellRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerTooltip: 'Are you legally eligible to work in the United States?'
+    },
     {
       headerName: 'Status',
       field: 'qualified',
@@ -730,7 +657,7 @@ export default function CandidatesAgGrid({
       cellRenderer: CellRenderer,
       headerTooltip: 'Qualification status (PASS/FAIL)'
     }
-  ], [questionMeta, expandedRows]);
+  ], [expandedRows]);
 
   // Export functions
   const exportCSV = () => {
@@ -772,9 +699,6 @@ export default function CandidatesAgGrid({
               {candidateList.length} total records • Auto-refresh every 5 seconds
             </p>
           </div>
-          
-          {/* Questions Reference */}
-          <QuestionsReferenceCard questionMeta={questionMeta} candidateList={candidateList} />
         </div>
         
         <div className="flex items-center gap-2">
