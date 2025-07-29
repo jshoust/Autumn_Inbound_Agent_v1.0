@@ -44,14 +44,8 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   // Extract and format the questions and responses dynamically
   const getFormattedResponses = () => {
     if (!allData || Object.keys(allData).length === 0) {
-      console.log('=== EXPANDED VIEW DEBUG ===');
-      console.log('allData is empty or null:', allData);
       return [];
     }
-    
-    console.log('=== EXPANDED VIEW DEBUG ===');
-    console.log('allData keys:', Object.keys(allData));
-    console.log('allData:', allData);
     
     // Define the 6 questions with their keys and descriptions
     const questions = [
@@ -93,18 +87,15 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
       }
     ];
     
-    const responses: Array<{ question: string; answer: any; type: string; key: string; rationale?: string; response?: string }> = [];
+    const responses: Array<{ question: string; answer: any; response: string; key: string }> = [];
     
     // Process each question
     questions.forEach(q => {
       const questionData = allData[q.key];
       const responseData = q.responseKey ? allData[q.responseKey] : null;
       
-      console.log(`Processing ${q.key}:`, { questionData, responseData });
-      
       if (questionData) {
         let displayValue = questionData.value;
-        let rationale = questionData.rationale || '';
         let response = responseData?.value || '';
         
         // Format boolean responses
@@ -115,41 +106,20 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
         responses.push({
           question: q.questionText,
           answer: displayValue,
-          type: questionData.json_schema?.type || 'text',
-          key: q.key,
-          rationale: rationale,
-          response: response
+          response: response,
+          key: q.key
         });
       } else {
         // Question wasn't asked/answered
         responses.push({
           question: q.questionText,
           answer: '⏳ Not Asked',
-          type: 'boolean',
-          key: q.key,
-          rationale: 'This question was not asked during the call.',
-          response: ''
+          response: '',
+          key: q.key
         });
       }
     });
     
-    // Add basic info if available
-    const basicInfo = ['First_Name', 'Last_Name', 'Phone_number'];
-    basicInfo.forEach(key => {
-      const item = allData[key];
-      if (item) {
-        responses.unshift({
-          question: key.replace('_', ' '),
-          answer: item.value,
-          type: item.json_schema?.type || 'text',
-          key: key,
-          rationale: item.rationale || '',
-          response: ''
-        });
-      }
-    });
-    
-    console.log('Final responses:', responses);
     return responses;
   };
 
@@ -157,152 +127,49 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   
   return (
     <div className="w-full bg-white border-t border-slate-200 p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Call History Questions & Responses */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center gap-2 mb-4">
-            <h4 className="font-semibold text-slate-800 text-lg">📞 Call Details & Responses</h4>
-            <div className="text-sm text-slate-500">
-              {new Date(candidate.createdAt).toLocaleString()}
-            </div>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-2 mb-6">
+          <h4 className="font-semibold text-slate-800 text-xl">📞 Call Questions & Responses</h4>
+          <div className="text-sm text-slate-500">
+            {new Date(candidate.createdAt).toLocaleString()}
           </div>
-          
-          {formattedResponses.length > 0 ? (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {formattedResponses.map((item, index) => (
-                <div key={item.key} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="text-sm font-semibold text-slate-700">
-                      {item.key.includes('question') ? item.key.replace('_', ' ').replace(/([A-Z])/g, ' $1').trim() : item.key.replace('_', ' ')}:
-                    </div>
-                    <div className={`text-sm font-medium px-2 py-1 rounded ${
-                      item.type === 'boolean' 
-                        ? item.answer.includes('✅') 
-                          ? 'bg-green-100 text-green-800' 
-                          : item.answer.includes('❌')
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {item.answer}
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-600 mb-2">
-                    <strong>Question:</strong> {item.question}
-                  </div>
-                  {item.response && (
-                    <div className="text-sm text-slate-700 mb-2 bg-white p-2 rounded border">
-                      <strong>Response:</strong> "{item.response}"
-                    </div>
-                  )}
-                  {item.rationale && (
-                    <div className="text-xs text-slate-500 bg-white p-2 rounded border">
-                      <strong>AI Analysis:</strong> {item.rationale}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-              <div className="text-lg mb-2">📋 No Call Data Available</div>
-              <div className="text-sm">The call data may not have been fully processed or stored</div>
-              <div className="text-xs mt-2 text-slate-400">
-                Check the raw data below for more information
-              </div>
-            </div>
-          )}
         </div>
         
-        {/* Actions & Summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-slate-50 rounded-lg p-4 space-y-4">
-            <div>
-              <h5 className="font-semibold text-slate-700 text-base mb-3">📋 Candidate Summary</h5>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Name:</span>
-                  <span className="font-medium text-slate-800">
-                    {candidate.firstName} {candidate.lastName}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Phone:</span>
-                  <span className="font-medium text-slate-800">{candidate.phone}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Call ID:</span>
-                  <span className="font-mono text-xs text-slate-600">
-                    {candidate.conversationId}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Status:</span>
-                  <span className={`font-medium px-2 py-1 rounded text-xs ${
-                    candidate.qualified === true 
+        {formattedResponses.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {formattedResponses.map((item, index) => (
+              <div key={item.key} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="text-lg font-semibold text-slate-700">
+                    {item.label}
+                  </div>
+                  <div className={`text-sm font-medium px-3 py-1 rounded ${
+                    item.answer.includes('✅') 
                       ? 'bg-green-100 text-green-800' 
-                      : candidate.qualified === false 
-                        ? 'bg-red-100 text-red-800' 
+                      : item.answer.includes('❌')
+                        ? 'bg-red-100 text-red-800'
                         : 'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {candidate.qualified === true ? '✅ Qualified' : 
-                     candidate.qualified === false ? '❌ Not Qualified' : '⏳ Pending'}
-                  </span>
+                    {item.answer}
+                  </div>
                 </div>
+                <div className="text-sm text-slate-600 mb-2">
+                  <strong>Question:</strong> {item.question}
+                </div>
+                {item.response && (
+                  <div className="text-sm text-slate-700 bg-white p-3 rounded border">
+                    <strong>Caller's Response:</strong> "{item.response}"
+                  </div>
+                )}
               </div>
-            </div>
-            
-            <div className="border-t border-slate-200 pt-4">
-              <h5 className="font-semibold text-slate-700 text-base mb-3">🔧 Actions</h5>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => onViewTranscript(candidate)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  View Full Transcript
-                </Button>
-                
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: true })}
-                    disabled={candidate.qualified === true}
-                  >
-                    ✅ Qualify
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => qualifyMutation.mutate({ id: candidate.id, qualified: false })}
-                    disabled={candidate.qualified === false}
-                  >
-                    ❌ Reject
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Raw Data Toggle */}
-            <div className="border-t border-slate-200 pt-4">
-              <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
-                  🔍 Raw Data
-                </summary>
-                <div className="mt-2 p-2 bg-white rounded border text-xs font-mono overflow-auto max-h-32">
-                  <pre className="whitespace-pre-wrap">
-                    {JSON.stringify(allData, null, 2)}
-                  </pre>
-                </div>
-              </details>
-            </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+            <div className="text-lg mb-2">📋 No Call Data Available</div>
+            <div className="text-sm">The call data may not have been fully processed or stored</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -713,26 +580,6 @@ export default function CandidatesAgGrid({
 
   return (
     <div className="space-y-4">
-      {/* Debug Info - Show raw data structure */}
-      {candidateList.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">🔍 Debug: Data Structure</h3>
-          <p className="text-sm text-blue-700 mb-3">
-            Raw data structure for first candidate:
-          </p>
-          <div className="bg-white p-3 rounded border text-xs font-mono overflow-auto max-h-32">
-            <pre className="whitespace-pre-wrap">
-              {JSON.stringify({
-                id: candidateList[0].id,
-                rawConversationData: candidateList[0].rawConversationData,
-                dataCollection: candidateList[0].dataCollection,
-                extractedData: candidateList[0].extractedData
-              }, null, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
-      
       {/* Table Header with Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-lg">
         <div className="flex items-center gap-4">
