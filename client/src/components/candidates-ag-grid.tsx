@@ -1,19 +1,26 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, X, Clock, FileText, ChevronDown, HelpCircle } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import type { Candidate } from "@shared/schema";
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
+import React, { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Register AG Grid modules
-ModuleRegistry.registerModules([AllCommunityModule]);
+interface Candidate {
+  id: number;
+  conversationId: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  qualified: boolean | null;
+  agentId: string;
+  createdAt: string;
+  transcript: any[];
+  dataCollection: any;
+  rawConversationData: {
+    analysis: {
+      data_collection_results: any;
+    };
+    transcript: any[];
+  };
+}
 
 interface CandidatesAgGridProps {
   candidates: Candidate[];
@@ -36,95 +43,105 @@ function StatusIcon({ value }: { value: any }) {
   return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
 }
 
-// Detail Cell Renderer for expanded rows
-function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
-  const candidate = data._meta;
-  const allData = data._all;
-  
-  // Extract and format the questions and responses dynamically
-  const getFormattedResponses = () => {
-    if (!allData || Object.keys(allData).length === 0) {
-      return [];
-    }
-    
-    // Define the 6 questions with their keys and descriptions
-    const questions = [
-      {
-        key: 'question_one',
-        label: 'Q1: CDL License',
-        questionText: 'Do you currently have a valid Class A commercial driver\'s license?',
-        responseKey: 'question_one_response'
-      },
-      {
-        key: 'Question_two',
-        label: 'Q2: Experience',
-        questionText: 'Do you have at least 24 months of experience driving a tractor-trailer?',
-        responseKey: 'question_two_response'
-      },
-      {
-        key: 'Question_three',
-        label: 'Q3: Hopper Experience',
-        questionText: 'Do you have verifiable experience with hoppers?',
-        responseKey: 'question_three_response'
-      },
-      {
-        key: 'question_four',
-        label: 'Q4: OTR Available',
-        questionText: 'Are you able to be over the road for 3 weeks at a time?',
-        responseKey: 'Question_four_response'
-      },
-      {
-        key: 'question_five',
-        label: 'Q5: Clean Record',
-        questionText: 'Have you had any serious traffic violations in the last 3 years?',
-        responseKey: 'question_five_response'
-      },
-      {
-        key: 'question_six',
-        label: 'Q6: Work Eligible',
-        questionText: 'Are you legally eligible to work in the United States?',
-        responseKey: null
-      }
-    ];
-    
-    const responses: Array<{ question: string; answer: any; response: string; key: string }> = [];
-    
-    // Process each question
-    questions.forEach(q => {
-      const questionData = allData[q.key];
-      const responseData = q.responseKey ? allData[q.responseKey] : null;
-      
-      if (questionData) {
-        let displayValue = questionData.value;
-        let response = responseData?.value || '';
-        
-        // Format boolean responses
-        if (questionData.json_schema?.type === 'boolean') {
-          displayValue = questionData.value === true ? '✅ Yes' : questionData.value === false ? '❌ No' : '⏳ Not Asked';
-        }
-        
-        responses.push({
-          question: q.questionText,
-          answer: displayValue,
-          response: response,
-          key: q.key
-        });
-      } else {
-        // Question wasn't asked/answered
-        responses.push({
-          question: q.questionText,
-          answer: '⏳ Not Asked',
-          response: '',
-          key: q.key
-        });
-      }
-    });
-    
-    return responses;
-  };
+// Status badge renderer
+function StatusBadgeRenderer({ value }: { value: any }) {
+  if (value === true) {
+    return (
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+        PASS
+      </div>
+    );
+  } else if (value === false) {
+    return (
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+        <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+        FAIL
+      </div>
+    );
+  } else {
+    return (
+      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+        PENDING
+      </div>
+    );
+  }
+}
 
-  const formattedResponses = getFormattedResponses();
+// Expanded row component
+function ExpandedRow({ candidate }: { candidate: Candidate }) {
+  const allData = candidate.rawConversationData?.analysis?.data_collection_results || {};
   
+  // Define the 6 questions with their keys and descriptions
+  const questions = [
+    {
+      key: 'question_one',
+      label: 'Q1: CDL License',
+      questionText: 'Do you currently have a valid Class A commercial driver\'s license?',
+      responseKey: 'question_one_response'
+    },
+    {
+      key: 'Question_two',
+      label: 'Q2: Experience',
+      questionText: 'Do you have at least 24 months of experience driving a tractor-trailer?',
+      responseKey: 'question_two_response'
+    },
+    {
+      key: 'Question_three',
+      label: 'Q3: Hopper Experience',
+      questionText: 'Do you have verifiable experience with hoppers?',
+      responseKey: 'question_three_response'
+    },
+    {
+      key: 'question_four',
+      label: 'Q4: OTR Available',
+      questionText: 'Are you able to be over the road for 3 weeks at a time?',
+      responseKey: 'Question_four_response'
+    },
+    {
+      key: 'question_five',
+      label: 'Q5: Clean Record',
+      questionText: 'Have you had any serious traffic violations in the last 3 years?',
+      responseKey: 'question_five_response'
+    },
+    {
+      key: 'question_six',
+      label: 'Q6: Work Eligible',
+      questionText: 'Are you legally eligible to work in the United States?',
+      responseKey: null
+    }
+  ];
+
+  const formattedResponses = questions.map(q => {
+    const questionData = allData[q.key];
+    const responseData = q.responseKey ? allData[q.responseKey] : null;
+    
+    if (questionData) {
+      let displayValue = questionData.value;
+      let response = responseData?.value || '';
+      
+      // Format boolean responses
+      if (questionData.json_schema?.type === 'boolean') {
+        displayValue = questionData.value === true ? '✅ Yes' : questionData.value === false ? '❌ No' : '⏳ Not Asked';
+      }
+      
+      return {
+        question: q.questionText,
+        answer: displayValue,
+        response: response,
+        key: q.key
+      };
+    } else {
+      return {
+        question: q.questionText,
+        answer: '⏳ Not Asked',
+        response: '',
+        key: q.key
+      };
+    }
+  });
+
   return (
     <div className="w-full bg-white border-t border-slate-200 p-6">
       <div className="max-w-4xl mx-auto">
@@ -175,99 +192,40 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   );
 }
 
-// Status Badge Cell Renderer
-function StatusBadgeRenderer({ value }: any) {
-  if (value === true) {
-    return (
-      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-        PASS
-      </div>
-    );
-  } else if (value === false) {
-    return (
-      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-        <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
-        FAIL
-      </div>
-    );
-  } else {
-    return (
-      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
-        PENDING
-      </div>
-    );
-  }
-}
-
-
-
 export default function CandidatesAgGrid({
   candidates,
   isLoading,
   onViewTranscript,
   onRefetch
 }: CandidatesAgGridProps) {
-  const gridRef = useRef<AgGridReact>(null);
-  const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const { toast } = useToast();
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const queryClient = useQueryClient();
 
+  // Qualification mutation
   const qualifyMutation = useMutation({
     mutationFn: async ({ id, qualified }: { id: number; qualified: boolean }) => {
-      return await apiRequest('POST', `/api/candidates/${id}/qualify`, { qualified });
+      const response = await fetch(`/api/candidates/${id}/qualify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qualified })
+      });
+      if (!response.ok) throw new Error('Failed to update qualification');
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/candidates'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: "Candidate status updated successfully",
-      });
-      onRefetch();
-    },
-    onError: () => {
-      toast({
-        title: "Error", 
-        description: "Failed to update candidate status",
-        variant: "destructive",
-      });
-    },
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    }
   });
 
-  // Defensive: if a single object passed, wrap as array
-  const candidateList = Array.isArray(candidates) ? candidates : [candidates];
-
-  // Debug: Log the incoming data
-  console.log('=== CANDIDATES DATA ===');
-  console.log('Candidates count:', candidateList.length);
-  if (candidateList.length > 0) {
-    console.log('First candidate:', candidateList[0]);
-    console.log('First candidate rawConversationData:', candidateList[0]?.rawConversationData);
-    console.log('First candidate data_collection_results:', candidateList[0]?.rawConversationData?.analysis?.data_collection_results);
-  }
-
-  // Build rows: one per candidate with expansion rows
-  const rowData = useMemo(() => {
-    const rows: any[] = [];
-    
-    candidateList.forEach((cand, idx) => {
-      // Get data from the correct location in the API response
+  // Process candidates data
+  const processedCandidates = useMemo(() => {
+    return candidates.map((cand, idx) => {
       const results = cand?.rawConversationData?.analysis?.data_collection_results || {};
-      
-      // Debug: Log the data for each candidate
-      console.log(`=== CANDIDATE ${idx} DATA ===`);
-      console.log('Candidate:', cand.id);
-      console.log('Raw conversation data:', cand?.rawConversationData);
-      console.log('Analysis results:', results);
-      console.log('Available keys:', Object.keys(results));
       
       const getField = (field: string) => {
         const entry = results[field];
-        const value = entry ? entry.value : null;
-        console.log(`Field ${field}:`, value);
-        return value;
+        return entry ? entry.value : null;
       };
       
       // Check if call was completed or interrupted
@@ -286,10 +244,7 @@ export default function CandidatesAgGrid({
         Q6: getField('question_six') ?? 'Not Asked'
       };
       
-      console.log('Question columns:', questionColumns);
-      
-      // Main row
-      const mainRow = {
+      return {
         id: idx,
         name: `${cand.firstName || getField('First_Name') || ''} ${cand.lastName || getField('Last_Name') || ''}`.trim() || 'Unknown',
         phone: cand.phone || getField('Phone_number') || 'No phone',
@@ -297,41 +252,10 @@ export default function CandidatesAgGrid({
         callStatus: callStatus,
         qualified: cand.qualified,
         ...questionColumns,
-        _all: results,
-        _meta: cand,
-        _isExpanded: false,
-        _rowType: 'main'
+        _meta: cand
       };
-      
-      rows.push(mainRow);
-      
-      // Add expansion row if this row is expanded
-      if (expandedRows.has(idx)) {
-        const expandedRow = {
-          id: `${idx}_expanded`,
-          name: '',
-          phone: '',
-          callTime: '',
-          callStatus: '',
-          qualified: null,
-          Q1: '',
-          Q2: '',
-          Q3: '',
-          Q4: '',
-          Q5: '',
-          Q6: '',
-          _all: results,
-          _meta: cand,
-          _isExpanded: true,
-          _rowType: 'expanded',
-          _parentId: idx
-        };
-        rows.push(expandedRow);
-      }
     });
-    
-    return rows;
-  }, [candidateList, expandedRows]);
+  }, [candidates]);
 
   const toggleRowExpansion = (rowId: number) => {
     setExpandedRows(prev => {
@@ -345,221 +269,41 @@ export default function CandidatesAgGrid({
     });
   };
 
-  // Full-width cell renderer for expanded rows
-  const FullWidthCellRenderer = (params: any) => {
-    return (
-      <DetailCellRenderer 
-        data={params.data} 
-        onViewTranscript={onViewTranscript} 
-        qualifyMutation={qualifyMutation} 
-      />
-    );
+  const toggleAllExpanded = () => {
+    if (expandedRows.size === processedCandidates.length) {
+      setExpandedRows(new Set());
+    } else {
+      setExpandedRows(new Set(processedCandidates.map((_, idx) => idx)));
+    }
   };
 
-  // Check if a row should be full-width (expanded rows)
-  const isFullWidthRow = (rowNode: any) => {
-    return rowNode.data && rowNode.data._rowType === 'expanded';
-  };
-
-  // Custom cell renderer for regular rows
-  const CellRenderer = (params: any) => {
-    const { data, colDef } = params;
-    
-    // Regular row rendering (expanded rows are handled by FullWidthCellRenderer)
-    if (colDef.field === 'expand') {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="p-1 h-auto hover:bg-slate-100"
-          onClick={() => toggleRowExpansion(data.id)}
-          title={expandedRows.has(data.id) ? 'Collapse details' : 'Expand details'}
-        >
-          <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(data.id) ? 'rotate-180' : ''}`} />
-        </Button>
-      );
-    }
-    
-    if (colDef.field === 'callTime' && data._meta) {
-      const date = new Date(data._meta.createdAt);
-      return (
-        <div className="text-sm">
-          <div>{date.toLocaleDateString()}</div>
-          <div className="text-xs text-slate-500">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-        </div>
-      );
-    }
-    
-    // Handle question columns (Q1-Q6)
-    if (['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'].includes(colDef.field)) {
-      return <StatusIcon value={params.value} />;
-    }
-    
-    if (colDef.field === 'qualified') {
-      return <StatusBadgeRenderer value={params.value} />;
-    }
-    
-    return params.value;
-  };
-
-  // Build AG Grid columns
-  const columnDefs = useMemo(() => [
-    { 
-      headerName: '🔽', 
-      field: 'expand',
-      width: 50,
-      cellRenderer: CellRenderer,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      headerTooltip: 'Click to expand for detailed view'
-    },
-    { 
-      headerName: 'ID', 
-      field: 'id', 
-      width: 60,
-      minWidth: 50,
-      cellRenderer: (params: any) => `#${params.value + 1}`,
-      headerTooltip: 'Caller ID (sequential)'
-    },
-    { 
-      headerName: 'Name', 
-      field: 'name', 
-      width: 150,
-      minWidth: 120,
-      cellRenderer: CellRenderer,
-      headerTooltip: 'Candidate full name'
-    },
-    { 
-      headerName: 'Phone', 
-      field: 'phone', 
-      width: 130,
-      minWidth: 110,
-      cellRenderer: CellRenderer,
-      headerTooltip: 'Contact phone number'
-    },
-    { 
-      headerName: 'Call Time', 
-      field: 'callTime', 
-      width: 140,
-      minWidth: 120,
-      cellRenderer: CellRenderer,
-      headerTooltip: 'Call completion timestamp'
-    },
-    {
-      headerName: 'Call Status',
-      field: 'callStatus',
-      width: 100,
-      minWidth: 90,
-      cellRenderer: (params: any) => {
-        const status = params.value;
-        if (status === 'COMPLETED') {
-          return (
-            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-              COMPLETE
-            </div>
-          );
-        } else if (status === 'INTERRUPTED') {
-          return (
-            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
-              INTERRUPTED
-            </div>
-          );
-        } else {
-          return (
-            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
-              INCOMPLETE
-            </div>
-          );
-        }
-      },
-      headerTooltip: 'Call completion status'
-    },
-    // Fixed question columns
-    {
-      headerName: 'Q1',
-      field: 'Q1',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Do you currently have a valid Class A commercial driver\'s license?'
-    },
-    {
-      headerName: 'Q2',
-      field: 'Q2',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Do you have at least 24 months of experience driving a tractor-trailer?'
-    },
-    {
-      headerName: 'Q3',
-      field: 'Q3',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Do you have verifiable experience with hoppers?'
-    },
-    {
-      headerName: 'Q4',
-      field: 'Q4',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Are you able to be over the road for 3 weeks at a time?'
-    },
-    {
-      headerName: 'Q5',
-      field: 'Q5',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Have you had any serious traffic violations in the last 3 years?'
-    },
-    {
-      headerName: 'Q6',
-      field: 'Q6',
-      width: 80,
-      minWidth: 70,
-      maxWidth: 90,
-      cellRenderer: CellRenderer,
-      cellStyle: { textAlign: 'center' },
-      headerTooltip: 'Are you legally eligible to work in the United States?'
-    },
-    {
-      headerName: 'Status',
-      field: 'qualified',
-      width: 100,
-      minWidth: 90,
-      cellRenderer: CellRenderer,
-      headerTooltip: 'Qualification status (PASS/FAIL)'
-    }
-  ], [expandedRows]);
-
-  // Export functions
   const exportCSV = () => {
-    gridRef.current?.api.exportDataAsCsv({
-      fileName: `candidates-${new Date().toISOString().split('T')[0]}.csv`
-    });
-  };
+    const headers = ['ID', 'Name', 'Phone', 'Call Time', 'Call Status', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...processedCandidates.map(cand => [
+        cand.id + 1,
+        cand.name,
+        cand.phone,
+        cand.callTime,
+        cand.callStatus,
+        cand.Q1,
+        cand.Q2,
+        cand.Q3,
+        cand.Q4,
+        cand.Q5,
+        cand.Q6,
+        cand.qualified
+      ].join(','))
+    ].join('\n');
 
-  // Multi-select functions
-  const handleSelectionChanged = () => {
-    const rows = gridRef.current?.api.getSelectedRows() || [];
-    setSelectedRows(rows);
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `candidates-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const handleBulkQualify = (qualified: boolean) => {
@@ -586,7 +330,7 @@ export default function CandidatesAgGrid({
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Call Records</h2>
             <p className="text-sm text-slate-600">
-              {candidateList.length} total records • Auto-refresh every 5 seconds
+              {processedCandidates.length} total records • Auto-refresh every 5 seconds
             </p>
           </div>
         </div>
@@ -597,16 +341,10 @@ export default function CandidatesAgGrid({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (expandedRows.size === candidateList.length) {
-                  setExpandedRows(new Set());
-                } else {
-                  setExpandedRows(new Set(candidateList.map((_, idx) => idx)));
-                }
-              }}
+              onClick={toggleAllExpanded}
               className="text-xs"
             >
-              {expandedRows.size === candidateList.length ? 'Collapse All' : 'Expand All'}
+              {expandedRows.size === processedCandidates.length ? 'Collapse All' : 'Expand All'}
             </Button>
           </div>
           
@@ -654,48 +392,136 @@ export default function CandidatesAgGrid({
         </div>
       </div>
 
-      {/* AG Grid */}
-      <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
-        <AgGridReact
-          ref={gridRef}
-          rowData={rowData}
-          columnDefs={columnDefs}
-          theme="legacy"
-          defaultColDef={{
-            resizable: true,
-            sortable: true,
-            filter: true,
-            wrapText: false,
-            autoHeight: false,
-            flex: 0
-          }}
-          rowSelection={{ 
-            mode: "multiRow", 
-            checkboxes: true, 
-            enableClickSelection: false, 
-            headerCheckbox: true
-          }}
-          selectionOptions={{
-            isRowSelectable: (params) => params.data._rowType !== 'expanded'
-          }}
-          onSelectionChanged={handleSelectionChanged}
-          isFullWidthRow={isFullWidthRow}
-          fullWidthCellRenderer={FullWidthCellRenderer}
-          getRowHeight={(params) => {
-            return params.data._rowType === 'expanded' ? 400 : 50;
-          }}
-          headerHeight={45}
-          suppressHorizontalScroll={false}
-          getRowStyle={(params) => {
-            if (params.data._rowType === 'expanded') {
-              return { backgroundColor: '#ffffff', border: 'none' };
-            }
-            return {};
-          }}
-          onFirstDataRendered={() => {
-            gridRef.current?.api.sizeColumnsToFit();
-          }}
-        />
+      {/* Simple React Table */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-12">
+                  🔽
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  ID
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-32">
+                  Name
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-28">
+                  Phone
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-32">
+                  Call Time
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-24">
+                  Call Status
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q1
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q2
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q3
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q4
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q5
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-16">
+                  Q6
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+              {processedCandidates.map((candidate, index) => (
+                <React.Fragment key={candidate.id}>
+                  <tr className="hover:bg-slate-50">
+                    <td className="px-3 py-4 whitespace-nowrap">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-auto hover:bg-slate-100"
+                        onClick={() => toggleRowExpansion(candidate.id)}
+                        title={expandedRows.has(candidate.id) ? 'Collapse details' : 'Expand details'}
+                      >
+                        {expandedRows.has(candidate.id) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                      #{candidate.id + 1}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                      {candidate.name}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                      {candidate.phone}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-900">
+                      {candidate.callTime}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap">
+                      {candidate.callStatus === 'COMPLETED' ? (
+                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          COMPLETE
+                        </div>
+                      ) : candidate.callStatus === 'INTERRUPTED' ? (
+                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                          <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                          INTERRUPTED
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                          INCOMPLETE
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q1} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q2} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q3} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q4} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q5} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusIcon value={candidate.Q6} />
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
+                      <StatusBadgeRenderer value={candidate.qualified} />
+                    </td>
+                  </tr>
+                  {expandedRows.has(candidate.id) && (
+                    <tr>
+                      <td colSpan={13} className="p-0">
+                        <ExpandedRow candidate={candidate._meta} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
