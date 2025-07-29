@@ -44,8 +44,14 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
   // Extract and format the questions and responses dynamically
   const getFormattedResponses = () => {
     if (!allData || Object.keys(allData).length === 0) {
+      console.log('=== EXPANDED VIEW DEBUG ===');
+      console.log('allData is empty or null:', allData);
       return [];
     }
+    
+    console.log('=== EXPANDED VIEW DEBUG ===');
+    console.log('allData keys:', Object.keys(allData));
+    console.log('allData:', allData);
     
     // Define the 6 questions with their keys and descriptions
     const questions = [
@@ -77,7 +83,7 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
         key: 'question_five',
         label: 'Q5: Clean Record',
         questionText: 'Have you had any serious traffic violations in the last 3 years?',
-        responseKey: 'question_five_reponse'
+        responseKey: 'question_five_response'
       },
       {
         key: 'question_six',
@@ -93,6 +99,8 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
     questions.forEach(q => {
       const questionData = allData[q.key];
       const responseData = q.responseKey ? allData[q.responseKey] : null;
+      
+      console.log(`Processing ${q.key}:`, { questionData, responseData });
       
       if (questionData) {
         let displayValue = questionData.value;
@@ -141,6 +149,7 @@ function DetailCellRenderer({ data, onViewTranscript, qualifyMutation }: any) {
       }
     });
     
+    console.log('Final responses:', responses);
     return responses;
   };
 
