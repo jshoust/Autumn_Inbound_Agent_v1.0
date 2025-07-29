@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@azure/identity": "^4.0.1",
-    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@mui/material": "^7.2.0",
     "@mui/x-data-grid": "^8.9.1",
     "@neondatabase/serverless": "^0.10.4",
