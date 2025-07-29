@@ -103,7 +103,7 @@ export default function Settings() {
     enabled: isAdmin,
   });
 
-  const { data: emailLogs } = useQuery({
+  const { data: emailLogs, isLoading: emailLogsLoading } = useQuery({
     queryKey: ["/api/reports/logs"],
     enabled: isAdmin,
   });
@@ -950,7 +950,9 @@ export default function Settings() {
                     <CardDescription>Recent email delivery history</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {emailLogs && Array.isArray(emailLogs) ? (
+                    {emailLogsLoading ? (
+                      <div className="text-center py-4">Loading email logs...</div>
+                    ) : Array.isArray(emailLogs) && emailLogs.length > 0 ? (
                       <Table>
                         <TableHeader>
                           <TableRow>

@@ -32,7 +32,7 @@ export default function Header() {
               <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">
                 Driver Recruiting System
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate -mt-1">
                 Boon Technologies
               </p>
             </div>
@@ -40,7 +40,7 @@ export default function Header() {
 
           {/* Agent Information - Hidden on small screens, shown on medium+ */}
           {agentData && (
-            <div className="hidden lg:flex items-center space-x-4 flex-shrink-0">
+            <div className="hidden lg:flex items-center space-x-4 flex-shrink-0 mr-6">
               <div className="flex items-center space-x-2 text-sm">
                 <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-foreground truncate max-w-48">
