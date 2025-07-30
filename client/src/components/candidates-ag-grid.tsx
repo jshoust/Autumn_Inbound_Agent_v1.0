@@ -30,18 +30,17 @@ interface CandidatesAgGridProps {
 }
 
 // Helper: render check, x, or dash for Q columns
-function StatusIcon({ value }: { value: any }) {
-  if (value === true || value === 'true' || value === 'TRUE') {
-    return <span style={{ color: '#168821', fontSize: 22 }}>✅</span>;
+const StatusIcon = ({ value }: { value: boolean | string | null }) => {
+  if (value === true || value === "TRUE" || value === "true") {
+    return <span className="text-green-600 font-medium">Pass</span>;
+  } else if (value === false || value === "FALSE" || value === "false") {
+    return <span className="text-red-600 font-medium">Fail</span>;
+  } else if (value === "Not Asked") {
+    return <span className="text-gray-500 font-medium">Not Asked</span>;
+  } else {
+    return <span className="text-gray-400">-</span>;
   }
-  if (value === false || value === 'false' || value === 'FALSE') {
-    return <span style={{ color: '#c00', fontSize: 22 }}>❌</span>;
-  }
-  if (value === 'Not Asked' || value === null || value === undefined) {
-    return <span style={{ color: '#aaa', fontSize: 18 }}>⏳</span>;
-  }
-  return <span style={{ color: '#aaa', fontSize: 18 }}>—</span>;
-}
+};
 
 // Status badge renderer
 function StatusBadgeRenderer({ value }: { value: any }) {

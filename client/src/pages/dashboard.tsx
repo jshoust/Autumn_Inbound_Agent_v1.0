@@ -131,21 +131,21 @@ export default function Dashboard() {
         {/* AG Grid Table */}
         <div className="bg-white rounded-lg shadow-sm border border-border">
           {/* Legend */}
-          <div className="px-6 py-3 border-b border-border bg-muted/30">
-            <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-              <span className="font-medium">Symbol Legend:</span>
-              <div className="flex items-center space-x-2">
-                <span className="text-green-600 text-lg">✅</span>
-                <span>Yes/True</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-red-600 text-lg">❌</span>
-                <span>No/False</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500 text-lg">⏳</span>
-                <span>Not Asked</span>
-              </div>
+          <div className="flex items-center justify-center space-x-6 text-sm text-gray-600 mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-green-600 font-medium">Pass</span>
+              <span>•</span>
+              <span>Candidate passed this question</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-red-600 font-medium">Fail</span>
+              <span>•</span>
+              <span>Candidate failed this question</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-500 font-medium">Not Asked</span>
+              <span>•</span>
+              <span>Question was not asked</span>
             </div>
           </div>
           
