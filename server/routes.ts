@@ -19,24 +19,12 @@ import { postmarkService } from "./postmark";
 import { reportGenerator } from "./report-generator";
 import { reportScheduler } from "./scheduler";
 import { insertReportsConfigSchema, updateReportsConfigSchema } from "@shared/schema";
-import { CalendarService } from './calendar-service.js';
+// Temporarily disabled due to Microsoft Graph Client ES module import issues
+// import { CalendarService } from './calendar-service.js';
 
-// Helper function to get calendar service
-async function getCalendarService(): Promise<CalendarService> {
-  const config = await storage.getCalendarConfig();
-  
-  if (!config || !config.enabled) {
-    throw new Error('Calendar integration is not configured or enabled');
-  }
-
-  return new CalendarService({
-    clientId: config.clientId!,
-    clientSecret: config.clientSecret!,
-    tenantId: config.tenantId!,
-    recruiterEmail: config.recruiterEmail || 'info@neurovista.ai',
-    defaultDurationMinutes: config.defaultDurationMinutes || 30,
-    timezone: config.timezone || 'America/Chicago'
-  });
+// Helper function to get calendar service - temporarily disabled
+async function getCalendarService(): Promise<any> {
+  throw new Error('Calendar integration is temporarily disabled due to module import issues. Please contact support.');
 }
 
 // Webhook signature verification - proper ElevenLabs format
@@ -450,48 +438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Calendar Integration Routes
+  // Calendar Integration Routes - Temporarily disabled
   app.get('/api/calendar/slots', requireAuth, async (req, res) => {
-    try {
-      const { days = 7 } = req.query;
-      const calendarService = await getCalendarService();
-      const slots = await calendarService.getAvailableSlots(parseInt(days as string));
-      res.json(slots);
-    } catch (error) {
-      console.error('Error fetching available slots:', error);
-      res.status(500).json({ error: 'Failed to fetch available slots' });
-    }
+    res.status(503).json({ error: 'Calendar integration is temporarily disabled due to module import issues. Please contact support.' });
   });
 
   app.post('/api/calendar/book-interview', requireAuth, async (req, res) => {
-    try {
-      const { candidateId, candidateName, candidatePhone, candidateEmail } = req.body;
-      
-      const calendarService = await getCalendarService();
-      const interview = await calendarService.autoBookInterview({
-        name: candidateName,
-        phone: candidatePhone,
-        email: candidateEmail
-      });
-
-      // Store in database
-      await storage.createScheduledInterview({
-        candidateId,
-        candidateName,
-        candidatePhone,
-        candidateEmail,
-        subject: interview.subject,
-        startTime: interview.startTime,
-        endTime: interview.endTime,
-        calendarEventId: interview.calendarEventId,
-        recruiterEmail: interview.recruiterEmail
-      });
-
-      res.json(interview);
-    } catch (error) {
-      console.error('Error booking interview:', error);
-      res.status(500).json({ error: 'Failed to book interview' });
-    }
+    res.status(503).json({ error: 'Calendar integration is temporarily disabled due to module import issues. Please contact support.' });
   });
 
   app.get('/api/calendar/interviews', requireAuth, async (req, res) => {
@@ -505,21 +458,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/calendar/next-interview', requireAuth, async (req, res) => {
-    try {
-      const calendarService = await getCalendarService();
-      const nextInterview = await calendarService.getNextAppointment();
-      res.json(nextInterview);
-    } catch (error) {
-      console.error('Error fetching next interview:', error);
-      res.status(500).json({ error: 'Failed to fetch next interview' });
-    }
+    res.status(503).json({ error: 'Calendar integration is temporarily disabled due to module import issues. Please contact support.' });
   });
 
   // Auto-booking trigger for qualified candidates
   app.post('/api/candidates/:id/auto-book', requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const candidate = await storage.getCallRecord(parseInt(id));
+      const candidates = await storage.getCallRecords();
+      const candidate = candidates.find(c => c.id === parseInt(id));
       
       if (!candidate) {
         return res.status(404).json({ error: 'Candidate not found' });
@@ -540,30 +487,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing candidate name or phone number' });
       }
 
-      const calendarService = await getCalendarService();
-      const interview = await calendarService.autoBookInterview({
-        name: candidateName,
-        phone: candidatePhone,
-        email: candidateEmail
-      });
-
-      // Store in database
-      await storage.createScheduledInterview({
-        candidateId: parseInt(id),
-        candidateName,
-        candidatePhone,
-        candidateEmail,
-        subject: interview.subject,
-        startTime: interview.startTime,
-        endTime: interview.endTime,
-        calendarEventId: interview.calendarEventId,
-        recruiterEmail: interview.recruiterEmail
-      });
-
-      res.json({
-        success: true,
-        interview,
-        message: 'Interview scheduled successfully'
+      res.status(503).json({ 
+        error: 'Calendar integration is temporarily disabled due to module import issues. Please contact support.',
+        candidateInfo: {
+          name: candidateName,
+          phone: candidatePhone,
+          email: candidateEmail
+        }
       });
     } catch (error) {
       console.error('Error auto-booking interview:', error);
@@ -1216,8 +1146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate Excel file using the same function
-      const postmark = new PostmarkService();
-      const excelBase64 = postmark.generateExcelAttachment(callRecord);
+      const excelBase64 = postmarkService.generateExcelAttachment(callRecord);
       const excelBuffer = Buffer.from(excelBase64, 'base64');
       
       // Set headers for file download
