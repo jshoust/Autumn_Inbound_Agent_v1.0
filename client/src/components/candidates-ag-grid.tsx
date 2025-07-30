@@ -102,13 +102,13 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
       key: 'question_five',
       label: 'Q5: Clean Record',
       questionText: 'Have you had any serious traffic violations in the last 3 years?',
-      responseKey: 'question_five_response'
+      responseKey: 'question_five_reponse' // Note: this is the actual field name with typo
     },
     {
       key: 'question_six',
       label: 'Q6: Work Eligible',
       questionText: 'Are you legally eligible to work in the United States?',
-      responseKey: null
+      responseKey: 'question_six_response' // This field doesn't exist in the data, but we'll try to find it
     }
   ];
 
@@ -120,21 +120,40 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
       let displayValue = questionData.value;
       let response = responseData?.value || '';
         
-        // Format boolean responses
+      // Format boolean responses
       if (questionData.json_schema?.type === 'boolean') {
-        displayValue = questionData.value === true ? '✅ Yes' : questionData.value === false ? '❌ No' : '⏳ Not Asked';
+        displayValue = questionData.value === true ? 'Pass' : questionData.value === false ? 'Fail' : 'Not Asked';
+      }
+      
+      // For question 6, try to extract response from the rationale if no response field exists
+      if (q.key === 'question_six' && !response && questionData.rationale) {
+        // Look for the actual response in the rationale
+        const rationale = questionData.rationale;
+        if (rationale.includes('"Yes I am"')) {
+          response = 'Yes I am';
+        } else if (rationale.includes('"Yes"')) {
+          response = 'Yes';
+        } else if (rationale.includes('"No"')) {
+          response = 'No';
+        } else if (rationale.includes('explicitly states "Yes I am"')) {
+          response = 'Yes I am';
+        } else if (rationale.includes('responded with "Yes"')) {
+          response = 'Yes';
+        } else if (rationale.includes('responded with "No"')) {
+          response = 'No';
+        }
       }
       
       return {
         question: q.questionText,
-          answer: displayValue,
+        answer: displayValue,
         response: response,
         key: q.key
       };
     } else {
       return {
         question: q.questionText,
-        answer: '⏳ Not Asked',
+        answer: 'Not Asked',
         response: '',
         key: q.key
       };
@@ -160,9 +179,9 @@ function ExpandedRow({ candidate }: { candidate: Candidate }) {
                     {item.label}
                   </div>
                   <div className={`text-sm font-medium px-3 py-1 rounded ${
-                    item.answer.includes('✅') 
+                    item.answer.includes('Pass') 
                       ? 'bg-green-100 text-green-800' 
-                      : item.answer.includes('❌')
+                      : item.answer.includes('Fail')
                         ? 'bg-red-100 text-red-800'
                         : 'bg-yellow-100 text-yellow-800'
                   }`}>
