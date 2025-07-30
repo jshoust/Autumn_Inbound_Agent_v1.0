@@ -17,6 +17,7 @@ interface Candidate {
   rawConversationData: {
     analysis: {
       data_collection_results: any;
+      call_successful: string;
     };
     transcript: any[];
   };
@@ -265,7 +266,20 @@ export default function CandidatesAgGrid({
       const transcript = cand?.transcript || cand?.rawConversationData?.transcript || [];
       const isInterrupted = transcript.some((msg: any) => msg.interrupted === true);
       const hasData = Object.keys(results).length > 0;
-      const callStatus = isInterrupted ? 'INTERRUPTED' : hasData ? 'COMPLETED' : 'INCOMPLETE';
+      
+      // Check the call_successful field from the analysis
+      const callSuccessful = cand?.rawConversationData?.analysis?.call_successful;
+      
+      let callStatus;
+      if (callSuccessful === 'success' && hasData) {
+        callStatus = 'COMPLETED';
+      } else if (isInterrupted) {
+        callStatus = 'INTERRUPTED';
+      } else if (hasData) {
+        callStatus = 'COMPLETED';
+      } else {
+        callStatus = 'INCOMPLETE';
+      }
       
       // Create question columns for all 6 questions - show "Not Asked" for null values
       const questionColumns = {
